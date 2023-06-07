@@ -4,12 +4,15 @@ module sessions
 pub fn (session Session) new_flash(value json.Any) {
 	flashes_key := 'flashes'
 	if data := session.values[flashes_key] {
-		data << value // https://github.com/vlang/v/discussions/18370
-		session.values[flashes_key] = data
+		if data is []json.Any {
+			session.values[flashes_key] = arrays.concat(data, value)
+		} else {
+			mut new_array := []json.Any{}
+			new_array << data
+			session.values[flashes_key] = arrays.concat(new_array, value)
+		}
 	} else {
-		mut new_array := []json.Any{}
-		new_array << value
-		session.values[flashes_key] = new_array
+		session.values[flashes_key] = value
 	}
 }
 
@@ -17,7 +20,6 @@ pub fn (session Session) new_flash(value json.Any) {
 pub fn (session Session) get_flashes() ?json.Any {
 	flashes_key := 'flashes'
 	if data := session.values[flashes_key] {
-		// Drop the flashes and return it.
 		session.values.delete(flashes_key)
 		return data
 	}
