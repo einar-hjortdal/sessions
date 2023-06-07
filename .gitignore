@@ -1,0 +1,17 @@
+notes/
+
+# Ignore binary output folders
+bin/
+
+# Ignore common editor/system specific metadata
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# ENV
+.env
+
+# docs generated with 
+# v doc . -m -f html
+_docs
