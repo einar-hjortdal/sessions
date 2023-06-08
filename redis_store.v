@@ -4,7 +4,7 @@ import net.http
 import vweb
 import rand
 import x.json2 as json
-import redis
+import patrickpissurno.redis
 
 pub struct RedisStoreOptions {
 	pool_opts      redis.PoolOpts

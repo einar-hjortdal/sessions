@@ -6,7 +6,7 @@ import os
 import time
 import vweb
 import x.json2 as json
-import redis
+import patrickpissurno.redis
 
 pub struct Session {
 	name  string
