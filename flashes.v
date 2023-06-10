@@ -1,7 +1,10 @@
 module sessions
 
+import arrays
+import x.json2 as json
+
 // new_flash adds a flash to the session.
-pub fn (session Session) new_flash(value json.Any) {
+pub fn (mut session Session) new_flash(value json.Any) {
 	flashes_key := 'flashes'
 	if data := session.values[flashes_key] {
 		if data is []json.Any {
@@ -17,7 +20,7 @@ pub fn (session Session) new_flash(value json.Any) {
 }
 
 // get_flashes returns flashes from the session, if any are set.
-pub fn (session Session) get_flashes() ?json.Any {
+pub fn (mut session Session) get_flashes() ?json.Any {
 	flashes_key := 'flashes'
 	if data := session.values[flashes_key] {
 		session.values.delete(flashes_key)

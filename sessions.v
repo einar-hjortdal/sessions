@@ -1,12 +1,6 @@
 module sessions
 
-import encoding.base64
-import log
-import os
-import time
-import vweb
 import x.json2 as json
-import patrickpissurno.redis
 
 pub struct Session {
 	name  string

@@ -12,7 +12,7 @@ The sessions middleware verifies the signature of the cookie and acts accordingl
 
 Session cookies only contain the session ID, all the session data is stored on `Store`s. 
 
-The only supported `Store` at the moment is Redis and relies on the [vredis](https://github.com/patrickpissurno/vredis) library. This `Store` is developed against [KeyDB](https://github.com/Snapchat/KeyDB).
+The only supported `Store` at the moment is Redis and relies on [patrickpissurno/vredis](https://github.com/patrickpissurno/vredis). This `Store` is developed against [KeyDB](https://github.com/Snapchat/KeyDB).
 
 ## Usage
 
@@ -40,7 +40,7 @@ redis_store := new_redis_store(rso)
 mut session := redis_store.new(request, 'demo')
 // Edit sessions and then save the changes
 session.values['subscribed'] = false
-redis_store.save(request, session)
+redis_store.save(response_header, session)
 ```
 
 ## Notes
