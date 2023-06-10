@@ -90,7 +90,7 @@ pub fn (mut store RedisStore) save(mut response_header http.Header, mut session 
 }
 
 fn (store RedisStore) set_ex(session Session) ! {
-	data := json.encode(session)
+	data := json.encode[Session](session)
 	if store.max_length != 0 && data.len > store.max_length {
 		return error('The value to store is too big')
 	}
