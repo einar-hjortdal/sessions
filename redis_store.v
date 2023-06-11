@@ -56,7 +56,7 @@ pub fn (store RedisStore) get(mut request http.Request, name string) Session {
 
 // new returns a session for the given name without adding it to the registry.
 pub fn (mut store RedisStore) new(mut request http.Request, name string) Session {
-	mut session := new_session(store, name)
+	mut session := new_session(name)
 	session.is_new = true
 
 	if request_cookie := get_cookie(request, name) {
@@ -133,8 +133,7 @@ fn (store RedisStore) load(mut session Session) !bool {
 	store.pool.release(conn)
 
 	// Put decoded data into the session struct
-	data := json.decode[map[string]json.Any](json_data)!
-	session.values = &data
+	session.values = json.decode[map[string]json.Any](json_data)!
 	return true
 }
 

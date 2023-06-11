@@ -8,6 +8,6 @@ fn setup() RedisStore {
 
 fn test_new_session() {
 	store := setup()
-	session := new_session(store, 'test')
+	session := new_session('test')
 	println(session)
 }
