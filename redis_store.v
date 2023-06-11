@@ -62,7 +62,7 @@ pub fn (mut store RedisStore) new(mut request http.Request, name string) Session
 	if request_cookie := get_cookie(request, name) {
 		if session_id := decode_value(request_cookie, store.cookie_opts.secret) {
 			session.id = session_id
-			if _ := store.load(session) {
+			if _ := store.load(mut session) {
 				session.is_new = false
 				return session
 			}
@@ -90,7 +90,7 @@ pub fn (mut store RedisStore) save(mut response_header http.Header, mut session 
 }
 
 fn (store RedisStore) set_ex(session Session) ! {
-	data := json.encode[Session](session)
+	data := json.encode[map[string]json.Any](session.values)
 	if store.max_length != 0 && data.len > store.max_length {
 		return error('The value to store is too big')
 	}
@@ -124,7 +124,7 @@ fn (store RedisStore) load(mut session Session) !bool {
 		store.pool.release(conn)
 		return false
 	}
-	if store.refresh_expire == true {
+	if store.refresh_expire {
 		conn.expire(store.key_prefix + session.id, store.expire) or {
 			store.pool.release(conn)
 			return err
@@ -133,8 +133,8 @@ fn (store RedisStore) load(mut session Session) !bool {
 	store.pool.release(conn)
 
 	// Put decoded data into the session struct
-	data := json.decode(json_data)!
-	session.values = data
+	data := json.decode[map[string]json.Any](json_data)!
+	session.values = &data
 	return true
 }
 
