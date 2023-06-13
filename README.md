@@ -16,6 +16,8 @@ The only supported `Store` at the moment is Redis and relies on [patrickpissurno
 
 ## Usage
 
+Install with `v install Coachonko.sessions`
+
 ```V
 import sessions
 
