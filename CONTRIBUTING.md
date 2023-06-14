@@ -8,11 +8,11 @@ Please follow these standards
 2. Add the original repository as an additional git remote called "upstream"
 3. Create a new branch
     - The branch called production is the branch that goes live
-    - The branch called master is the branch used for development
-    - Feature (feat_) branches are branched off and then merged into master once features are bug-free
-    - Release (rele_) branches are branched off master and then merged into production
+    - The branch called meester is the branch used for development
+    - Feature (feat_) branches are branched off and then merged into meester once features are bug-free
+    - Release (rele_) branches are branched off meester and then merged into production
     - Bug fix (bugf_) branches are branched off production and then merged into both production, release 
-    and master
+    and meester
 
 4. Write your code, test it and make sure it works
 5. Commit your changes
