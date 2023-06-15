@@ -1,7 +1,7 @@
 Module{
 	name: 'sessions'
 	author: 'Coachonko'
-	version: '0.1.0'
+	version: '1.2.0'
 	dependencies: ['https://github.com/patrickpissurno/vredis']
 	repo_url: 'https://github.com/Coachonko/sessions'
 	vcs: 'git'

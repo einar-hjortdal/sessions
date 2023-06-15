@@ -14,6 +14,15 @@ Session cookies only contain the session ID, all the session data is stored on `
 
 The only supported `Store` at the moment is Redis and relies on [patrickpissurno/vredis](https://github.com/patrickpissurno/vredis). This `Store` is developed against [KeyDB](https://github.com/Snapchat/KeyDB).
 
+Eventually, a JWT store will be implemented. This option will not require setting cookies nor server-side 
+session stores.
+
+## Redis store features
+
+- Create a new connection pool or use an existing one
+- Unlimited or limited session data size
+- Refresh `EXPIRE` on each request or only when session data is changed
+
 ## Usage
 
 Install with `v install Coachonko.sessions`

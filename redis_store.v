@@ -6,15 +6,21 @@ import x.json2 as json
 import patrickpissurno.redis
 
 // RedisStoreOptions is the struct to provide to new_redis_store.
-// By default, a new RedisPool is created. If existing_pool is set to true, the new RedisStore will
-// use the provided pre-existing RedisPool.
 pub struct RedisStoreOptions {
-	existing_pool  bool
-	pool           redis.RedisPool
-	pool_opts      redis.PoolOpts
-	cookie_opts    CookieOptions
-	max_length     int
-	key_prefix     string
+	// existing_pool when not provided creates a new RedisPool for sessions storage.
+	// When set to true, the provided pre-existing RedisPool will be used instead.
+	existing_pool bool
+	// pool is the pre-existing RedisPool that will be used when existing_pool is set to true.
+	pool redis.RedisPool
+	// pool_opts are the options used to create a new RedisPool.
+	// https://github.com/patrickpissurno/vredis/
+	pool_opts   redis.PoolOpts
+	cookie_opts CookieOptions
+	// max_length when not provided defaults 4096 bytes.
+	max_length int
+	// key_prefix when not provided defaults to 'session_'
+	key_prefix string
+	// refresh_expire when true resets the `EXPIRE` time when a session is loaded with `get` or `new`
 	refresh_expire bool
 }
 
