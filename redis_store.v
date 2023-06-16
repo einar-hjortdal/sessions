@@ -36,7 +36,7 @@ mut:
 
 // new_redis_store creates a new RedisStore with the given RedisStoreOptions.
 pub fn new_redis_store(rso RedisStoreOptions) !RedisStore {
-	mut pool := get_pool(rso) or { return err }
+	mut pool := get_pool(rso)!
 	mut max_length := rso.max_length
 	if max_length == 0 {
 		max_length = 4096
@@ -64,7 +64,7 @@ fn get_pool(rso RedisStoreOptions) !redis.RedisPool {
 	if rso.existing_pool {
 		return rso.pool
 	} else {
-		return redis.new_pool(rso.pool_opts) or { return err }
+		return redis.new_pool(rso.pool_opts)!
 	}
 }
 
@@ -95,12 +95,12 @@ pub fn (mut store RedisStore) new(mut request http.Request, name string) Session
 // save adds a single session to the response.
 pub fn (mut store RedisStore) save(mut response_header http.Header, mut session Session) ! {
 	if store.cookie_opts.max_age <= 0 {
-		store.delete(mut response_header, mut session) or { return err }
+		store.delete(mut response_header, mut session)!
 		set_cookie(mut response_header, new_cookie(session.name, '', store.cookie_opts)) or {
 			return err
 		}
 	} else {
-		store.set_ex(session) or { return err }
+		store.set_ex(session)!
 		value := encode_value(session.id, store.cookie_opts.secret)
 		set_cookie(mut response_header, new_cookie(session.name, value, store.cookie_opts)) or {
 			return err
@@ -114,21 +114,21 @@ fn (mut store RedisStore) set_ex(session Session) ! {
 		return error('The value to store is too big')
 	}
 
-	mut conn := store.pool.borrow() or { return err }
+	mut conn := store.pool.borrow()!
 	conn.setex(store.key_prefix + session.id, store.expire, data)
-	store.pool.release(conn) or { return err }
+	store.pool.release(conn)!
 }
 
 fn (mut store RedisStore) delete(mut response_header http.Header, mut session Session) ! {
 	// Remove data from Redis
-	mut conn := store.pool.borrow() or { return err }
-	conn.del(store.key_prefix + session.id) or { return err }
-	store.pool.release(conn) or { return err }
+	mut conn := store.pool.borrow()!
+	conn.del(store.key_prefix + session.id)!
+	store.pool.release(conn)!
 
 	// Set cookie to expire
 	mut cookie_opts := store.cookie_opts
 	cookie_opts.max_age = -1
-	set_cookie(mut response_header, new_cookie(session.name, '', cookie_opts)) or { return err }
+	set_cookie(mut response_header, new_cookie(session.name, '', cookie_opts))!
 
 	// Clear session values from memory
 	for k, _ in session.values {
@@ -138,18 +138,18 @@ fn (mut store RedisStore) delete(mut response_header http.Header, mut session Se
 
 // load returns true if there is session data in Redis.
 fn (mut store RedisStore) load(mut session Session) !bool {
-	mut conn := store.pool.borrow() or { return err }
+	mut conn := store.pool.borrow()!
 	json_data := conn.get(store.key_prefix + session.id) or {
-		store.pool.release(conn) or { return err }
+		store.pool.release(conn)!
 		return false
 	}
 	if store.refresh_expire {
 		conn.expire(store.key_prefix + session.id, store.expire) or {
-			store.pool.release(conn) or { return err }
+			store.pool.release(conn)!
 			return err
 		}
 	}
-	store.pool.release(conn) or { return err }
+	store.pool.release(conn)!
 
 	// Put decoded data into the session struct
 	session.values = json.decode[map[string]json.Any](json_data)!
@@ -157,6 +157,6 @@ fn (mut store RedisStore) load(mut session Session) !bool {
 }
 
 // close disconnects from the Redis pool
-pub fn (mut store RedisStore) close() ! {
+pub fn (mut store RedisStore) close() {
 	store.pool.disconnect()
 }
