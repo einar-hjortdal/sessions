@@ -28,7 +28,7 @@ session stores.
 Install with `v install Coachonko.sessions`
 
 ```V
-import sessions
+import coachonko.sessions
 
 // Create options structs
 redis_pool_opts := redis.PoolOpts{
