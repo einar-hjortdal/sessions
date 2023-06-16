@@ -96,15 +96,11 @@ pub fn (mut store RedisStore) new(mut request http.Request, name string) Session
 pub fn (mut store RedisStore) save(mut response_header http.Header, mut session Session) ! {
 	if store.cookie_opts.max_age <= 0 {
 		store.delete(mut response_header, mut session)!
-		set_cookie(mut response_header, new_cookie(session.name, '', store.cookie_opts)) or {
-			return err
-		}
+		set_cookie(mut response_header, new_cookie(session.name, '', store.cookie_opts))!
 	} else {
 		store.set_ex(session)!
 		value := encode_value(session.id, store.cookie_opts.secret)
-		set_cookie(mut response_header, new_cookie(session.name, value, store.cookie_opts)) or {
-			return err
-		}
+		set_cookie(mut response_header, new_cookie(session.name, value, store.cookie_opts))!
 	}
 }
 
