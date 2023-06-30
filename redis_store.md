@@ -1,10 +1,14 @@
 # Redis store
 
+Redis store stores session data in a Redis instance. A cookie is given to the client, this cookie contains 
+a session id used to match the client to its session data.
+
 ## Usage
 
 Install with `v install Coachonko.sessions`
 
 ```V
+// import the module
 import coachonko.sessions
 
 // Create options structs

@@ -15,5 +15,6 @@ mut:
 fn new_session(name string) Session {
 	return Session{
 		name: name
+		is_new: true
 	}
 }

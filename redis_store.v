@@ -76,7 +76,6 @@ pub fn (store RedisStore) get(mut request http.Request, name string) Session {
 // new returns a session for the given name without adding it to the registry.
 pub fn (mut store RedisStore) new(mut request http.Request, name string) Session {
 	mut session := new_session(name)
-	session.is_new = true
 
 	if request_cookie := get_cookie(request, name) {
 		if session_id := decode_value(request_cookie, store.cookie_opts.secret) {
