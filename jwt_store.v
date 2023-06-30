@@ -15,6 +15,9 @@ pub struct JsonWebTokenStoreOptions {
 	name string
 	// app_name is the name of the application that is meant to consume the token. Defaults to Coachonko.
 	app_name string
+	// audience is the name of the group of applications that are meant to consume the token.
+	// If not provied it will match the app_name.
+	audience string
 	// valid_start is the time from the moment the token is created to the moment it becomes valid.
 	// If not provided, the token is valid immediately after being issued.
 	valid_start time.Duration
@@ -35,12 +38,13 @@ pub struct JsonWebTokenStore {
 // The comments explain how to obtain these values.
 struct Claims {
 	// iss is the identifier of the issuer of the token.
-	// JsonWebTokenStoreOptions.name
+	// JsonWebTokenStoreOptions.app_name
 	iss string
 	// sub is the unique id of the subject.
 	sub string
 	// aud is the identifier of the application that will use the token.
 	// JsonWebTokenStoreOptions.app_name
+	// JsonWebTokenStoreOptions.audience
 	aud string
 	// exp is the expiration timestamp of the token.
 	// time.now().add(JsonWebTokenStoreOptions.valid_end).unix_time()
@@ -74,6 +78,11 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 		app_name = 'Coachonko'
 	}
 
+	mut audience := opts.audience
+	if audience == '' {
+		audience = app_name
+	}
+
 	mut valid_end := opts.valid_end
 	if valid_end == 0 {
 		valid_end = 12 * time.hour
@@ -83,6 +92,8 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 		JsonWebTokenStoreOptions: JsonWebTokenStoreOptions{
 			secret: opts.secret
 			name: name
+			app_name: app_name
+			audience: audience
 			valid_start: opts.valid_start
 			valid_from: opts.valid_from
 			valid_end: valid_end
@@ -103,10 +114,18 @@ pub fn (mut store JsonWebTokenStore) get(mut request http.Request, name string) 
 pub fn (mut store JsonWebTokenStore) new(mut request http.Request, name string) Session {
 	mut s := new_session(store.name)
 
-	if token := request.header.get(http.CommonHeader.authorization) {
-		if data := store.decode_token(token) {
-			s.values = data
-			s.id = data['jwi']
+	if auth_header := request.header.get(http.CommonHeader.authorization) {
+		if auth_header.starts_with('Bearer ') {
+			token := auth_header.trim_string_left('Bearer ')
+			if data := store.decode_token(token) {
+				jwi := data['jwi'] or { '' }
+				if jwi is string {
+					if jwi != '' {
+						s.id = jwi
+					}
+				}
+				s.values = &data
+			}
 		}
 	}
 
@@ -115,7 +134,8 @@ pub fn (mut store JsonWebTokenStore) new(mut request http.Request, name string) 
 
 pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut session Session) ! {
 	new_jwt := store.new_token(mut session)!
-	response_header.add(http.CommonHeader.authorization, new_jwt)
+	auth_header := 'Bearer ${new_jwt}'
+	response_header.add(http.CommonHeader.authorization, auth_header)
 }
 
 fn (store JsonWebTokenStore) new_token(mut session Session) !string {
@@ -185,22 +205,18 @@ fn (store JsonWebTokenStore) decode_token(token string) !map[string]json.Any {
 fn (store JsonWebTokenStore) validate_token(token map[string]json.Any) bool {
 	now := time.now().unix_time()
 	// Ensure the token is already valid and has not yet expired
-	if token['nbf'] is i64 {
-		if token['nfb'] > now {
+	nbf := token['nbf'] or { 0 }
+	if nbf is i64 {
+		if nbf > now && nbf != 0 {
 			return false
 		}
 	}
-	if token['exp'] is i64 {
-		if token['exp'] < now {
+	exp := token['exp'] or { 0 }
+	if exp is i64 {
+		if exp < now && exp != 0 {
 			return false
 		}
 	}
 
-	// Ensure this app is the target audience
-	if token['aud'] is string {
-		if token['aud'] != store.app_name {
-			return false
-		}
-	}
 	return true
 }
