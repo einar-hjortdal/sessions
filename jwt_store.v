@@ -23,8 +23,6 @@ pub struct JsonWebTokenStoreOptions {
 	// It is not very useful when there is a single backend server and sessions are not shared.
 	// Defaults to Coachonko.
 	issuer string
-	// name is the name of the session.
-	name string
 	// secret is a string used to sign the token.
 	secret string
 	// valid_start is the time from the moment the token is created to the moment it becomes valid.
@@ -77,11 +75,6 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 		return error('secret must be provided')
 	}
 
-	mut name := opts.name
-	if name == '' {
-		name = 'session_'
-	}
-
 	mut issuer := opts.issuer
 	if issuer == '' {
 		issuer = 'Coachonko'
@@ -107,7 +100,6 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 			app_name: app_name
 			audience: audience
 			issuer: issuer
-			name: name
 			secret: opts.secret
 			valid_start: opts.valid_start
 			valid_end: valid_end
@@ -133,7 +125,8 @@ pub fn (mut store JsonWebTokenStore) get(mut request http.Request, name string) 
 }
 
 pub fn (mut store JsonWebTokenStore) new(mut request http.Request, name string) Session {
-	mut s := new_session(store.name)
+	// Session.name is actually not used because there cannot be more than one authorization header.
+	mut s := new_session(name)
 
 	if auth_header := request.header.get(http.CommonHeader.authorization) {
 		if auth_header.starts_with('Bearer ') {
@@ -168,6 +161,7 @@ pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut s
 fn (store JsonWebTokenStore) new_token(mut session Session) !string {
 	store.set_claims(mut session)
 
+	// TODO: header is not used?
 	header := JsonWebTokenHeader{
 		alg: 'HS256'
 		typ: 'JWT'
@@ -187,7 +181,7 @@ fn (store JsonWebTokenStore) new_token(mut session Session) !string {
 }
 
 fn (store JsonWebTokenStore) set_claims(mut session Session) {
-	session.values['iss'] = store.name
+	session.values['iss'] = store.issuer
 	session.values['aud'] = store.app_name
 
 	if store.valid_end == 0 {
@@ -243,6 +237,6 @@ fn (store JsonWebTokenStore) validate_token(token map[string]json.Any) bool {
 			return false
 		}
 	}
-
+	// TODO compare app_name with aud
 	return true
 }
