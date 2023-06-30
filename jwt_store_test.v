@@ -53,8 +53,9 @@ fn test_new_session() {
 	}
 	if mut store := new_jwt_store(opts_defaults) {
 		mut session := store.new(mut http.Request{}, 'test_session')
-		println(session)
+		assert session.name == 'test_session'
 	} else {
-		println('oops')
+		assert false // failed to create session
 	}
+	// TODO create a dummy Request with an authorization header
 }
