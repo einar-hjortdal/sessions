@@ -9,23 +9,32 @@ import x.json2 as json
 
 // JsonWebTokenStoreOptions is the struct to provide to new_jwt_store.
 pub struct JsonWebTokenStoreOptions {
-	// secret is a string used to sign the token.
-	secret string
-	// name is the name of the session.
-	name string
-	// app_name is the name of the application that is meant to consume the token. Defaults to Coachonko.
+	// app_name is the name of the application that issued the token.
+	// This field is used to check whether this application is meant to consume the token.
+	// It is compared with the RFC7519 `aud` claim.
+	// Defaults to Coachonko.
 	app_name string
-	// audience is the name of the group of applications that are meant to consume the token.
+	// audience is the name of the app or the group of apps that are meant to consume the token.
+	// Sets RFC7519 `aud` claim.
 	// If not provied it will match the app_name.
 	audience string
+	// issuer is the identifier of the issuer of the token. Sets RFC7519 `iss` claim.
+	// This field is useufl to identify which backend or service issued the token.
+	// It is not very useful when there is a single backend server and sessions are not shared.
+	// Defaults to Coachonko.
+	issuer string
+	// name is the name of the session.
+	name string
+	// secret is a string used to sign the token.
+	secret string
 	// valid_start is the time from the moment the token is created to the moment it becomes valid.
 	// If not provided, the token is valid immediately after being issued.
 	valid_start time.Duration
-	// valid_from is the time when the token becomes valid. Overrides valid_start.
-	valid_from time.Time
 	// valid_end is the time from the moment the token is created to the moment it is no longer valid.
 	// If not provided, the token becomes invalid in 12 hours from the moment it is issued.
 	valid_end time.Duration
+	// valid_from is the time when the token becomes valid. Overrides valid_start.
+	valid_from time.Time
 	// valid_until is the time when the token becomes invalid. Overrides valid_end.
 	valid_until time.Time
 }
@@ -73,6 +82,11 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 		name = 'session_'
 	}
 
+	mut issuer := opts.issuer
+	if issuer == '' {
+		issuer = 'Coachonko'
+	}
+
 	mut app_name := opts.app_name
 	if app_name == '' {
 		app_name = 'Coachonko'
@@ -90,13 +104,14 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 
 	return JsonWebTokenStore{
 		JsonWebTokenStoreOptions: JsonWebTokenStoreOptions{
-			secret: opts.secret
-			name: name
 			app_name: app_name
 			audience: audience
+			issuer: issuer
+			name: name
+			secret: opts.secret
 			valid_start: opts.valid_start
-			valid_from: opts.valid_from
 			valid_end: valid_end
+			valid_from: opts.valid_from
 			valid_until: opts.valid_until
 		}
 	}
@@ -106,6 +121,12 @@ struct JsonWebTokenHeader {
 	alg string
 	typ string
 }
+
+/*
+*
+* Store interface
+*
+*/
 
 pub fn (mut store JsonWebTokenStore) get(mut request http.Request, name string) Session {
 	return Session{}
@@ -137,6 +158,12 @@ pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut s
 	auth_header := 'Bearer ${new_jwt}'
 	response_header.add(http.CommonHeader.authorization, auth_header)
 }
+
+/*
+*
+* Internal
+*
+*/
 
 fn (store JsonWebTokenStore) new_token(mut session Session) !string {
 	store.set_claims(mut session)
@@ -197,9 +224,8 @@ fn (store JsonWebTokenStore) decode_token(token string) !map[string]json.Any {
 		if store.validate_token(payload) {
 			return payload
 		}
-	} else {
-		return error('token signature is not valid')
 	}
+	return error('token signature is not valid')
 }
 
 fn (store JsonWebTokenStore) validate_token(token map[string]json.Any) bool {
