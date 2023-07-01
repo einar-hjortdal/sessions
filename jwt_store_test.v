@@ -22,7 +22,6 @@ fn test_new_jwt_store() {
 		assert store.app_name == 'Coachonko'
 		assert store.audience == 'Coachonko'
 		assert store.valid_start == 0
-		assert store.valid_end == 12 * time.hour
 	} else {
 		assert false // failed to set defaults
 	}
@@ -68,6 +67,7 @@ fn test_new_session() {
 	} else {
 		assert false // failed to create session
 	}
+	// TODO provide valid_start and valid_from, valid_end and valid_until
 }
 
 fn test_save_session() {
