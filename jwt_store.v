@@ -10,8 +10,7 @@ import x.json2 as json
 // JsonWebTokenStoreOptions is the struct to provide to new_jwt_store.
 pub struct JsonWebTokenStoreOptions {
 	// app_name is the name of the application that issued the token.
-	// This field is used to check whether this application is meant to consume the token.
-	// It is compared with the RFC7519 `aud` claim.
+	// This is usually a domain name and it is compared with the RFC7519 `aud` claim.
 	// Defaults to Coachonko.
 	app_name string
 	// audience is the name of the app or the group of apps that are meant to consume the token.
@@ -20,9 +19,10 @@ pub struct JsonWebTokenStoreOptions {
 	audience string
 	// issuer is the identifier of the issuer of the token. Sets RFC7519 `iss` claim.
 	// This field is useufl to identify which backend or service issued the token.
-	// It is not very useful when there is a single backend server and sessions are not shared.
 	// Defaults to Coachonko.
 	issuer string
+	// only_from is a timestimp before which no token is considered valid. Defaults to July 1st 2023.
+	only_from time.Time
 	// secret is a string used to sign the token.
 	secret string
 	// valid_start is the time from the moment the token is created to the moment it becomes valid.
@@ -88,6 +88,13 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 	mut audience := opts.audience
 	if audience == '' {
 		audience = app_name
+	}
+
+	mut only_from := opts.only_from
+	if only_from.format_rfc3339() == '0000-00-00T00:00:00.000Z' {
+		only_from = time.parse_rfc3339('2023-07-01T00:00:00.000Z') or {
+			return error('Failed to set default only_from value')
+		}
 	}
 
 	mut valid_end := opts.valid_end
@@ -161,7 +168,7 @@ pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut s
 fn (store JsonWebTokenStore) new_token(mut session Session) !string {
 	store.set_claims(mut session)
 
-	// TODO: header is not used?
+	// TODO: jwt header is not used?
 	header := JsonWebTokenHeader{
 		alg: 'HS256'
 		typ: 'JWT'
@@ -181,17 +188,8 @@ fn (store JsonWebTokenStore) new_token(mut session Session) !string {
 }
 
 fn (store JsonWebTokenStore) set_claims(mut session Session) {
+	session.values['aud'] = store.audience
 	session.values['iss'] = store.issuer
-	session.values['aud'] = store.app_name
-
-	if store.valid_end == 0 {
-		if store.valid_until.unix != 0 {
-			session.values['exp'] = store.valid_until.unix_time()
-		}
-		session.values['exp'] = time.now().add(12 * time.hour)
-	} else {
-		session.values['exp'] = time.now().add(store.valid_end).unix_time()
-	}
 
 	if store.valid_start == 0 {
 		if store.valid_from.unix != 0 {
@@ -202,11 +200,20 @@ fn (store JsonWebTokenStore) set_claims(mut session Session) {
 
 	session.values['iat'] = time.now().unix_time()
 	session.values['jti'] = session.id
+
+	if store.valid_end == 0 {
+		if store.valid_until.unix != 0 {
+			session.values['exp'] = store.valid_until.unix_time()
+		}
+		session.values['exp'] = time.now().add(12 * time.hour)
+	} else {
+		session.values['exp'] = time.now().add(store.valid_end).unix_time()
+	}
 }
 
 // decode_token returns a decoded payload if the token signature and payload are both valid.
 fn (store JsonWebTokenStore) decode_token(token string) !map[string]json.Any {
-	if token.contains('.') && token.count('.') == 3 {
+	if token.contains('.') && token.count('.') == 2 {
 		split_token := token.split('.')
 		signature_mirror := hmac.new(store.secret.bytes(), '${split_token[0]}.${split_token[1]}'.bytes(),
 			sha256.sum, sha256.block_size).bytestr().bytes()
@@ -227,6 +234,11 @@ fn (store JsonWebTokenStore) decode_token(token string) !map[string]json.Any {
 	return error('token signature is not valid')
 }
 
+// validate_token returns an error if:
+// - the token is not valid yet (nbf)
+// - the token has expired (exp)
+// - the application is not meant to consume this token (aud)
+// - the token was issued after the given cutoff time (iat)
 fn (store JsonWebTokenStore) validate_token(token map[string]json.Any) ! {
 	now := time.now().unix_time()
 	// Ensure the token is already valid and has not yet expired
@@ -236,11 +248,28 @@ fn (store JsonWebTokenStore) validate_token(token map[string]json.Any) ! {
 			return error('Token not valid yet')
 		}
 	}
+	// Ensure the token is not expired
 	exp := token['exp'] or { 0 }
 	if exp is i64 {
 		if exp < now && exp != 0 {
-			return error('Token expired')
+			return error('Token has expired')
 		}
 	}
-	// TODO compare app_name with aud
+	// Ensure the app_name is in the audience
+	aud := token['aud'] or { '' }
+	if aud is string {
+		if aud != store.app_name && aud != '' {
+			return error('Token not valid for this app')
+		}
+	}
+	// Ensure the token was issued after the given date
+	iat := token['iat'] or { 0 }
+	if iat is i64 {
+		println(iat)
+		if iat > 0 && iat < store.only_from.unix_time() {
+			return error('Token was issued before ${store.only_from.format_rfc3339()}')
+		}
+	}
+	// TODO add filter to exclude specific issuers
+	// TODO add filter to allow specific issuers
 }

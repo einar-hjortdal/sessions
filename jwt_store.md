@@ -12,6 +12,7 @@ Install with `v install Coachonko.sessions`
 import coachonko.sessions
 
 // Create the options struct
+// For more information about this struct, please look at the source.
 jwtso := JsonWebTokenStoreOptions{
   // Provide a secret to encrypt the JWT.
   // It is recommended to use environment variables to store such secrets.
@@ -22,12 +23,12 @@ jwtso := JsonWebTokenStoreOptions{
 jwt_store := new_jwt_store(jwtso)
 
 // Use the JsonWebTokenStore to create or load existing sessions
-mut session := jwt_store.new(request, 'demo')
+mut session := jwt_store.new(request_header, 'demo')
 
 // Edit sessions and then save the changes
 
 // According to RFC7519, it is recommended to store the user ID in the field `sub`.
-// All the other RFC7519 are managed by the store. Some can be set in the JsonWebTokenStoreOptions.
+// All the other RFC7519 claims are managed by the store. Some can be set in the JsonWebTokenStoreOptions.
 // Note: the `sub` field is not required and sessions can still hold data for unauthenticated users.
 session.values['sub'] = '453636'
 
