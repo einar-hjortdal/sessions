@@ -66,4 +66,28 @@ fn test_new_session() {
 	} else {
 		assert false // failed to create session
 	}
+	// TODO check existing and valid authorization header
+}
+
+fn test_save_session() {
+	mut opts := JsonWebTokenStoreOptions{
+		secret: 'test'
+	}
+	mut header := http.Header{} // used as both request and response
+	// All defaults
+	if mut store := new_jwt_store(opts) {
+		mut session := store.new(mut header, 'test_session')
+		session.values['sub'] = '453636'
+		store.save(mut header, mut session) or {
+			assert false // failed to save session
+			return
+		}
+		auth_header := header.get(http.CommonHeader.authorization) or {
+			assert false // authorization header missing
+			return
+		}
+		assert auth_header != ''
+	} else {
+		assert false // failed to create session
+	}
 }
