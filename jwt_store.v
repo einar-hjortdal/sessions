@@ -98,11 +98,6 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 		}
 	}
 
-	mut valid_end := opts.valid_end
-	if valid_end == 0 {
-		valid_end = 12 * time.hour
-	}
-
 	return JsonWebTokenStore{
 		JsonWebTokenStoreOptions: JsonWebTokenStoreOptions{
 			app_name: app_name
@@ -110,7 +105,7 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 			issuer: issuer
 			secret: opts.secret
 			valid_start: opts.valid_start
-			valid_end: valid_end
+			valid_end: opts.valid_end
 			valid_from: opts.valid_from
 			valid_until: opts.valid_until
 		}
@@ -136,6 +131,7 @@ pub fn (mut store JsonWebTokenStore) new(mut request_header http.Header, name st
 	// Session.name is actually not used because there cannot be more than one authorization header.
 	mut s := new_session(name)
 
+	// TODO put the following code in a function and
 	if auth_header := request_header.get(http.CommonHeader.authorization) {
 		if auth_header.starts_with('Bearer ') {
 			token := auth_header.trim_string_left('Bearer ')
@@ -215,10 +211,11 @@ fn (store JsonWebTokenStore) set_claims(mut session Session) {
 		if store.valid_until.unix != 0 {
 			session.values['exp'] = store.valid_until.unix_time()
 		}
-		session.values['exp'] = time.now().add(12 * time.hour)
+		session.values['exp'] = time.now().add(12 * time.hour).unix_time()
 	} else {
 		session.values['exp'] = time.now().add(store.valid_end).unix_time()
 	}
+	println(session.values)
 }
 
 // decode_token returns a decoded payload if the token signature and payload are both valid.
