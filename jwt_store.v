@@ -42,14 +42,18 @@ pub struct JsonWebTokenStore {
 	JsonWebTokenStoreOptions
 }
 
-// Claims contains RFC7519 optional claims.
+struct JsonWebTokenHeader {
+	alg string
+	typ string
+}
+
+// JsonWebTokenPayload contains RFC7519 claims together with session data.
+// The `sub` claim is not used by the store.
 // The comments explain how to obtain these values.
-struct Claims {
+struct JsonWebTokenPayload {
 	// iss is the identifier of the issuer of the token.
 	// JsonWebTokenStoreOptions.app_name
 	iss string
-	// sub is the unique id of the subject.
-	sub string
 	// aud is the identifier of the application that will use the token.
 	// JsonWebTokenStoreOptions.app_name
 	// JsonWebTokenStoreOptions.audience
@@ -68,6 +72,8 @@ struct Claims {
 	// jti is the unique id of the token
 	// Session.id
 	jti string
+	// sessions is an array of Session.
+	sessions []Session
 }
 
 // new_jwt_store creates a JsonWebTokenStore with the given options.
@@ -112,11 +118,6 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 	}
 }
 
-struct JsonWebTokenHeader {
-	alg string
-	typ string
-}
-
 /*
 *
 * Store interface
@@ -128,7 +129,6 @@ pub fn (mut store JsonWebTokenStore) get(mut request_header http.Header, name st
 }
 
 pub fn (mut store JsonWebTokenStore) new(mut request_header http.Header, name string) Session {
-	// Session.name is actually not used because there cannot be more than one authorization header.
 	mut session := new_session(name)
 	store.load_token(mut request_header, mut session) or {
 		session.id = rand.uuid_v4()
@@ -137,8 +137,10 @@ pub fn (mut store JsonWebTokenStore) new(mut request_header http.Header, name st
 	return session
 }
 
+// save puts `Session.values` in an `Authorization` header in the response `Header`.
+// All session data is put in a property of the payload using the same name as the `Session.name`.
 pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut session Session) ! {
-	new_jwt := store.new_token(mut session)!
+	new_jwt := store.new_token(session)!
 	auth_header := 'Bearer ${new_jwt}'
 	response_header.add(http.CommonHeader.authorization, auth_header)
 }
@@ -155,31 +157,23 @@ fn (mut store JsonWebTokenStore) load_token(mut request_header http.Header, mut 
 	}
 	if auth_header.starts_with('Bearer ') {
 		token := auth_header.trim_string_left('Bearer ')
-		data := store.decode_token(token)!
-		jti := data['jti'] or { '' }
-		if jti is string {
-			if jti != '' {
-				session.id = jti
-				session.values = &data
-				session.is_new = false
-			}
-		}
+		data := store.decode_token(token)! // return JsonWebTokenPayload
+		// TODO
+		session.id = data.jti
+		session.values = data.sessions[session.name]
+		session.is_new = false
 	} else {
 		return error('Malformed Authorization header')
 	}
 }
 
-fn (store JsonWebTokenStore) new_token(mut session Session) !string {
-	store.set_claims(mut session)
-
-	// TODO: jwt header is not used?
-	header := JsonWebTokenHeader{
-		alg: 'HS256'
-		typ: 'JWT'
-	}
+fn (store JsonWebTokenStore) new_token(session Session) !string {
+	header := new_header()
+	payload := store.new_payload(session)
 
 	json_header := json.encode(header)
-	json_payload := json.encode(session.values)
+	json_payload := json.encode(payload)
+	println(json_payload)
 
 	encoded_header := base64.url_encode(json_header.bytes())
 	encoded_payload := base64.url_encode(json_payload.bytes())
@@ -191,34 +185,52 @@ fn (store JsonWebTokenStore) new_token(mut session Session) !string {
 	return '${encoded_header}.${encoded_payload}.${encoded_signature}'
 }
 
-fn (store JsonWebTokenStore) set_claims(mut session Session) {
-	session.values['aud'] = store.audience
-	session.values['iss'] = store.issuer
-
-	if store.valid_start == 0 {
-		if store.valid_from.unix != 0 {
-			session.values['nbf'] = store.valid_from.unix_time()
-		}
-		session.values['nbf'] = time.now().unix_time()
-	} else {
-		session.values['nbf'] = time.now().add(store.valid_start).unix_time()
-	}
-
-	session.values['iat'] = time.now().unix_time()
-	session.values['jti'] = session.id
-
-	if store.valid_end == 0 {
-		if store.valid_until.unix != 0 {
-			session.values['exp'] = store.valid_until.unix_time()
-		}
-		session.values['exp'] = time.now().add(12 * time.hour).unix_time()
-	} else {
-		session.values['exp'] = time.now().add(store.valid_end).unix_time()
+fn new_header() JsonWebTokenHeader {
+	return JsonWebTokenHeader{
+		alg: 'HS256'
+		typ: 'JWT'
 	}
 }
 
+fn (store JsonWebTokenStore) new_payload(session Session) JsonWebTokenPayload {
+	mut new_exp := time.Time{}
+	if store.valid_end == 0 {
+		if store.valid_until.unix != 0 {
+			new_exp = store.valid_until
+		}
+		new_exp = time.now().add(12 * time.hour)
+	} else {
+		new_exp = time.now().add(store.valid_end)
+	}
+
+	mut new_nbf := time.Time{}
+	if store.valid_start == 0 {
+		if store.valid_from.unix != 0 {
+			new_nbf = store.valid_from
+		}
+		new_nbf = time.now()
+	} else {
+		new_nbf = time.now().add(store.valid_start)
+	}
+
+	mut new_sessions := map[string]string{}
+	new_sessions[session.name] = session.values
+
+	payload := JsonWebTokenPayload{
+		aud: store.audience
+		iss: store.issuer
+		exp: new_exp.unix_time()
+		nbf: new_nbf.unix_time()
+		iat: time.now().unix_time()
+		jti: session.id
+		sessions: new_sessions
+	}
+
+	return payload
+}
+
 // decode_token returns a decoded payload if the token signature and payload are both valid.
-fn (store JsonWebTokenStore) decode_token(token string) !map[string]json.Any {
+fn (store JsonWebTokenStore) decode_token(token string) !JsonWebTokenPayload {
 	if token.contains('.') && token.count('.') == 2 {
 		split_token := token.split('.')
 		signature_mirror := hmac.new(store.secret.bytes(), '${split_token[0]}.${split_token[1]}'.bytes(),
@@ -227,8 +239,10 @@ fn (store JsonWebTokenStore) decode_token(token string) !map[string]json.Any {
 
 		if hmac.equal(decoded_signature, signature_mirror) {
 			json_payload := base64.url_decode(split_token[1]).bytestr()
-			payload := json.decode[map[string]json.Any](json_payload)! // x.json2 fails to decoded integers
-			store.validate_token(payload)!
+			println(json_payload)
+			payload := json.decode[JsonWebTokenPayload](json_payload)!
+			println(payload)
+			// store.validate_token(payload)!
 			return payload
 		} else {
 			return error('Token signature not valid')
@@ -236,7 +250,6 @@ fn (store JsonWebTokenStore) decode_token(token string) !map[string]json.Any {
 	} else {
 		return error('Malformed token')
 	}
-	return error('token signature is not valid')
 }
 
 // validate_token returns an error if:
@@ -244,37 +257,37 @@ fn (store JsonWebTokenStore) decode_token(token string) !map[string]json.Any {
 // - the token has expired (exp)
 // - the application is not meant to consume this token (aud)
 // - the token was issued after the given cutoff time (iat)
-fn (store JsonWebTokenStore) validate_token(token map[string]json.Any) ! {
-	now := time.now().unix_time()
-	// Ensure the token is already valid and has not yet expired
-	// TODO nbf and exp result int not i64
-	nbf := token['nbf'] or { 0 }
-	if nbf is i64 {
-		if nbf > now && nbf != 0 {
-			return error('Token not valid yet')
-		}
-	}
-	// Ensure the token is not expired
-	exp := token['exp'] or { 0 }
-	if exp is i64 {
-		if exp < now && exp != 0 {
-			return error('Token has expired')
-		}
-	}
-	// Ensure the app_name is in the audience
-	aud := token['aud'] or { '' }
-	if aud is string {
-		if aud != store.app_name && aud != '' {
-			return error('Token not valid for this app')
-		}
-	}
-	// Ensure the token was issued after the given date
-	iat := token['iat'] or { 0 }
-	if iat is i64 {
-		if iat > 0 && iat < store.only_from.unix_time() {
-			return error('Token was issued before ${store.only_from.format_rfc3339()}')
-		}
-	}
-	// TODO add filter to exclude specific issuers
-	// TODO add filter to only allow specific issuers
-}
+// fn (store JsonWebTokenStore) validate_token(token map[string]json.Any) ! {
+// 	now := time.now().unix_time()
+// 	// Ensure the token is already valid and has not yet expired
+// 	// TODO nbf and exp result int not i64
+// 	nbf := token['nbf'] or { 0 }
+// 	if nbf is i64 {
+// 		if nbf > now && nbf != 0 {
+// 			return error('Token not valid yet')
+// 		}
+// 	}
+// 	// Ensure the token is not expired
+// 	exp := token['exp'] or { 0 }
+// 	if exp is i64 {
+// 		if exp < now && exp != 0 {
+// 			return error('Token has expired')
+// 		}
+// 	}
+// 	// Ensure the app_name is in the audience
+// 	aud := token['aud'] or { '' }
+// 	if aud is string {
+// 		if aud != store.app_name && aud != '' {
+// 			return error('Token not intended to be consumed by this app')
+// 		}
+// 	}
+// 	// Ensure the token was issued after the given date
+// 	iat := token['iat'] or { 0 }
+// 	if iat is i64 {
+// 		if iat > 0 && iat < store.only_from.unix_time() {
+// 			return error('Token was issued before ${store.only_from.format_rfc3339()}')
+// 		}
+// 	}
+// 	// TODO add filter to exclude specific issuers
+// 	// TODO add filter to only allow specific issuers
+// }

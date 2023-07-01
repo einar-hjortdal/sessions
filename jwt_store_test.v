@@ -106,7 +106,7 @@ fn test_new_save() {
 	// Create new session, add some data to it and save it to the header
 	//
 	mut session := store.new(mut header, 'test_session')
-	session.values['sub'] = '453636'
+	session.values = '453636'
 	store.save(mut header, mut session) or {
 		assert false // failed to save session
 		return
@@ -114,8 +114,5 @@ fn test_new_save() {
 	// Attempt to read the data from the header to a new session
 	//
 	session = store.new(mut header, 'test_session')
-	sub := session.values['sub'] or { '' }
-	if sub is string {
-		assert sub == '453636'
-	}
+		assert session.values == '453636'
 }
