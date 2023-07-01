@@ -11,6 +11,8 @@
   to the user to perform further operations on them if needed. How can json.Any be removed in such situation?
 - Redis store 
   - Requires a new Redis library. Work in progress [here](https://github.com/Coachonko/redis).
+  - Use cookie headers, not `Context.get_cookie`
+  - `request.cookies` was removed from `net.http`
   - Cookie signature should be done on base64url encoded session id.
 - Implement new stores:
   - File system

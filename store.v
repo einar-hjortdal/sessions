@@ -10,7 +10,7 @@ import net.http
 // See redis_store.v for an example.
 pub interface Store {
 mut:
-	get(mut request http.Request, name string) Session
-	new(mut request http.Request, name string) Session
+	get(mut request_header http.Header, name string) Session
+	new(mut request_header http.Header, name string) Session
 	save(mut response_header http.Header, mut session Session) !
 }

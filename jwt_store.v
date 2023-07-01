@@ -120,15 +120,15 @@ struct JsonWebTokenHeader {
 *
 */
 
-pub fn (mut store JsonWebTokenStore) get(mut request http.Request, name string) Session {
+pub fn (mut store JsonWebTokenStore) get(mut request_header http.Header, name string) Session {
 	return Session{}
 }
 
-pub fn (mut store JsonWebTokenStore) new(mut request http.Request, name string) Session {
+pub fn (mut store JsonWebTokenStore) new(mut request_header http.Header, name string) Session {
 	// Session.name is actually not used because there cannot be more than one authorization header.
 	mut s := new_session(name)
 
-	if auth_header := request.header.get(http.CommonHeader.authorization) {
+	if auth_header := request_header.get(http.CommonHeader.authorization) {
 		if auth_header.starts_with('Bearer ') {
 			token := auth_header.trim_string_left('Bearer ')
 			if data := store.decode_token(token) {
@@ -206,37 +206,41 @@ fn (store JsonWebTokenStore) set_claims(mut session Session) {
 
 // decode_token returns a decoded payload if the token signature and payload are both valid.
 fn (store JsonWebTokenStore) decode_token(token string) !map[string]json.Any {
-	split_token := token.split('.')
+	if token.contains('.') && token.count('.') == 3 {
+		split_token := token.split('.')
+		signature_mirror := hmac.new(store.secret.bytes(), '${split_token[0]}.${split_token[1]}'.bytes(),
+			sha256.sum, sha256.block_size).bytestr().bytes()
+		decoded_signature := base64.url_decode(split_token[2])
 
-	signature_mirror := hmac.new(store.secret.bytes(), '${split_token[0]}.${split_token[1]}'.bytes(),
-		sha256.sum, sha256.block_size).bytestr().bytes()
-	decoded_signature := base64.url_decode(split_token[2])
-
-	if hmac.equal(decoded_signature, signature_mirror) {
-		json_payload := base64.url_decode(split_token[1]).bytestr()
-		payload := json.decode[map[string]json.Any](json_payload)!
-		if store.validate_token(payload) {
+		if hmac.equal(decoded_signature, signature_mirror) {
+			json_payload := base64.url_decode(split_token[1]).bytestr()
+			payload := json.decode[map[string]json.Any](json_payload)!
+			store.validate_token(payload)!
 			return payload
+		} else {
+			return error('Token signature not valid')
 		}
+	} else {
+		return error('Malformed token')
 	}
+
 	return error('token signature is not valid')
 }
 
-fn (store JsonWebTokenStore) validate_token(token map[string]json.Any) bool {
+fn (store JsonWebTokenStore) validate_token(token map[string]json.Any) ! {
 	now := time.now().unix_time()
 	// Ensure the token is already valid and has not yet expired
 	nbf := token['nbf'] or { 0 }
 	if nbf is i64 {
 		if nbf > now && nbf != 0 {
-			return false
+			return error('Token not valid yet')
 		}
 	}
 	exp := token['exp'] or { 0 }
 	if exp is i64 {
 		if exp < now && exp != 0 {
-			return false
+			return error('Token expired')
 		}
 	}
 	// TODO compare app_name with aud
-	return true
 }

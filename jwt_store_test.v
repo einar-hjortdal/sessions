@@ -51,11 +51,19 @@ fn test_new_session() {
 	opts_defaults := JsonWebTokenStoreOptions{
 		secret: 'test'
 	}
+	mut header := http.Header{}
 	if mut store := new_jwt_store(opts_defaults) {
-		mut session := store.new(mut http.Request{}, 'test_session')
+		mut session := store.new(mut header, 'test_session')
 		assert session.name == 'test_session'
 	} else {
 		assert false // failed to create session
 	}
-	// TODO create a dummy Request with an authorization header
+	// Should handle existing and invalid authorization header
+	header.add(http.CommonHeader.authorization, 'Bearer test')
+	if mut store := new_jwt_store(opts_defaults) {
+		mut session := store.new(mut header, 'test_session')
+		assert session.name == 'test_session'
+	} else {
+		assert false // failed to create session
+	}
 }
