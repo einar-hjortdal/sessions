@@ -215,7 +215,6 @@ fn (store JsonWebTokenStore) set_claims(mut session Session) {
 	} else {
 		session.values['exp'] = time.now().add(store.valid_end).unix_time()
 	}
-	println(session.values)
 }
 
 // decode_token returns a decoded payload if the token signature and payload are both valid.
@@ -228,7 +227,7 @@ fn (store JsonWebTokenStore) decode_token(token string) !map[string]json.Any {
 
 		if hmac.equal(decoded_signature, signature_mirror) {
 			json_payload := base64.url_decode(split_token[1]).bytestr()
-			payload := json.decode[map[string]json.Any](json_payload)!
+			payload := json.decode[map[string]json.Any](json_payload)! // x.json2 fails to decoded integers
 			store.validate_token(payload)!
 			return payload
 		} else {
@@ -273,11 +272,10 @@ fn (store JsonWebTokenStore) validate_token(token map[string]json.Any) ! {
 	// Ensure the token was issued after the given date
 	iat := token['iat'] or { 0 }
 	if iat is i64 {
-		println(iat)
 		if iat > 0 && iat < store.only_from.unix_time() {
 			return error('Token was issued before ${store.only_from.format_rfc3339()}')
 		}
 	}
 	// TODO add filter to exclude specific issuers
-	// TODO add filter to allow specific issuers
+	// TODO add filter to only allow specific issuers
 }
