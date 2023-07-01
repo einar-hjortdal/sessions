@@ -65,7 +65,7 @@ struct Claims {
 	// iat is the timestamp of when the token was issued.
 	// time.now().unix_time()
 	iat i64
-	// jwi is the unique id of the token
+	// jti is the unique id of the token
 	// Session.id
 	jti string
 }
@@ -129,32 +129,12 @@ pub fn (mut store JsonWebTokenStore) get(mut request_header http.Header, name st
 
 pub fn (mut store JsonWebTokenStore) new(mut request_header http.Header, name string) Session {
 	// Session.name is actually not used because there cannot be more than one authorization header.
-	mut s := new_session(name)
-
-	// TODO put the following code in a function and
-	if auth_header := request_header.get(http.CommonHeader.authorization) {
-		if auth_header.starts_with('Bearer ') {
-			token := auth_header.trim_string_left('Bearer ')
-			if data := store.decode_token(token) {
-				jwi := data['jwi'] or { '' }
-				if jwi is string {
-					if jwi != '' {
-						s.id = jwi
-					}
-				}
-				s.values = &data
-				s.is_new = false
-			} else {
-				s.id = rand.uuid_v4()
-			}
-		} else {
-			s.id = rand.uuid_v4()
-		}
-	} else {
-		s.id = rand.uuid_v4()
+	mut session := new_session(name)
+	store.load_token(mut request_header, mut session) or {
+		session.id = rand.uuid_v4()
+		return session
 	}
-
-	return s
+	return session
 }
 
 pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut session Session) ! {
@@ -168,6 +148,26 @@ pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut s
 * Internal
 *
 */
+
+fn (mut store JsonWebTokenStore) load_token(mut request_header http.Header, mut session Session) ! {
+	auth_header := request_header.get(http.CommonHeader.authorization) or {
+		return error('Authorization header is missing')
+	}
+	if auth_header.starts_with('Bearer ') {
+		token := auth_header.trim_string_left('Bearer ')
+		data := store.decode_token(token)!
+		jti := data['jti'] or { '' }
+		if jti is string {
+			if jti != '' {
+				session.id = jti
+				session.values = &data
+				session.is_new = false
+			}
+		}
+	} else {
+		return error('Malformed Authorization header')
+	}
+}
 
 fn (store JsonWebTokenStore) new_token(mut session Session) !string {
 	store.set_claims(mut session)
@@ -236,7 +236,6 @@ fn (store JsonWebTokenStore) decode_token(token string) !map[string]json.Any {
 	} else {
 		return error('Malformed token')
 	}
-
 	return error('token signature is not valid')
 }
 
