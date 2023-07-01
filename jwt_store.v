@@ -4,6 +4,7 @@ import crypto.hmac
 import crypto.sha256
 import encoding.base64
 import net.http
+import rand
 import time
 import x.json2 as json
 
@@ -146,8 +147,15 @@ pub fn (mut store JsonWebTokenStore) new(mut request_header http.Header, name st
 					}
 				}
 				s.values = &data
+				s.is_new = false
+			} else {
+				s.id = rand.uuid_v4()
 			}
+		} else {
+			s.id = rand.uuid_v4()
 		}
+	} else {
+		s.id = rand.uuid_v4()
 	}
 
 	return s
@@ -196,6 +204,8 @@ fn (store JsonWebTokenStore) set_claims(mut session Session) {
 			session.values['nbf'] = store.valid_from.unix_time()
 		}
 		session.values['nbf'] = time.now().unix_time()
+	} else {
+		session.values['nbf'] = time.now().add(store.valid_start).unix_time()
 	}
 
 	session.values['iat'] = time.now().unix_time()
@@ -242,6 +252,7 @@ fn (store JsonWebTokenStore) decode_token(token string) !map[string]json.Any {
 fn (store JsonWebTokenStore) validate_token(token map[string]json.Any) ! {
 	now := time.now().unix_time()
 	// Ensure the token is already valid and has not yet expired
+	// TODO nbf and exp result int not i64
 	nbf := token['nbf'] or { 0 }
 	if nbf is i64 {
 		if nbf > now && nbf != 0 {
