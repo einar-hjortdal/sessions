@@ -2,7 +2,7 @@
 
 sessions is a library for managing sessions in web applications written in the V language.
 
-Framework-agnostic but also features a middleware function for vweb.
+<!-- Framework-agnostic but also features a middleware function for vweb. -->
 
 ## JWT store
 
