@@ -3,6 +3,7 @@ module sessions
 import time
 import net.http
 
+// test_new_jwt_store checks whether all options are handled as expected.
 fn test_new_jwt_store() {
 	// must return an error when options do not contain a secret.
 	opts_no_secret := JsonWebTokenStoreOptions{}
@@ -53,6 +54,7 @@ fn test_new_jwt_store() {
 	// TODO check overriding values
 }
 
+// test_new_session checks whether a session is successfully created.
 fn test_new_session() {
 	opts_defaults := JsonWebTokenStoreOptions{
 		secret: 'test'
@@ -77,6 +79,7 @@ fn test_new_session() {
 	// TODO provide valid_start and valid_from, valid_end and valid_until
 }
 
+// test_save_session checks whether a session is successfully stored in a header.
 fn test_save_session() {
 	mut opts := JsonWebTokenStoreOptions{
 		secret: 'test'
@@ -99,6 +102,7 @@ fn test_save_session() {
 	}
 }
 
+// test_new_save checks whether a session is successfully created, stored in a token and retrieved.
 fn test_new_save() {
 	// With this test we set a new valid header and attempt to read it into a session.
 	opts := JsonWebTokenStoreOptions{
