@@ -26,13 +26,9 @@ jwt_store := new_jwt_store(jwtso)
 mut session := jwt_store.new(request_header, 'demo')
 
 // Edit sessions and then save the changes
+// Session.values can only contain a string: you must encode your data to string.
+// Structs can be encoded to json, but any encoding that outputs a string is fine.
+session.values = 'some string'
 
-// According to RFC7519, it is recommended to store the user ID in the field `sub`.
-// All the other RFC7519 claims are managed by the store. Some can be set in the JsonWebTokenStoreOptions.
-// Note: the `sub` field is not required and sessions can still hold data for unauthenticated users.
-session.values['sub'] = '453636'
-
-// Any other field is up to you:
-session.values['subscribed'] = false
 jwt_store.save(response_header, session)
 ```
