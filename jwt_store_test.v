@@ -123,7 +123,6 @@ fn test_new_save() {
 	// Attempt to read the data from the header to a new session
 	session = store.new(mut header, 'test_session')
 	assert session.values == '453636'
-
 }
 
 // test_new_save_nfb checks if valid_from works
@@ -192,7 +191,7 @@ fn test_new_save_aud() {
 
 // test_new_save_iat checks whether only_from works
 fn test_new_save_iat() {
-		opts := JsonWebTokenStoreOptions{
+	opts := JsonWebTokenStoreOptions{
 		secret: 'test'
 		only_from: time.now().add(12 * time.hour)
 	}

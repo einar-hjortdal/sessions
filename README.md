@@ -1,12 +1,10 @@
 # sessions
 
-sessions is a library for managing sessions in web applications written in the V language. 
+sessions is a library for managing sessions in web applications written in the V language.
 
 Framework-agnostic but also features a middleware function for vweb.
 
 ## JWT store
-
-> Currently being tested
 
 Documented [here](./jwt_store.md)
 
