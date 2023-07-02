@@ -6,7 +6,9 @@ import encoding.base64
 import net.http
 import rand
 import time
-import x.json2 as json
+// Can't use json2: https://github.com/vlang/v/issues/18734
+// import x.json2 as json 
+import json
 
 // JsonWebTokenStoreOptions is the struct to provide to new_jwt_store.
 pub struct JsonWebTokenStoreOptions {
@@ -131,7 +133,7 @@ pub fn (mut store JsonWebTokenStore) get(mut request_header http.Header, name st
 pub fn (mut store JsonWebTokenStore) new(mut request_header http.Header, name string) Session {
 	mut session := new_session(name)
 	store.load_token(mut request_header, mut session) or {
-		session.id = rand.uuid_v4()
+		session.id = 'session_${rand.uuid_v4()}'
 		return session
 	}
 	return session
@@ -158,10 +160,20 @@ fn (mut store JsonWebTokenStore) load_token(mut request_header http.Header, mut 
 	if auth_header.starts_with('Bearer ') {
 		token := auth_header.trim_string_left('Bearer ')
 		data := store.decode_token(token)! // return JsonWebTokenPayload
-		// TODO
-		session.id = data.jti
-		session.values = data.sessions[session.name]
-		session.is_new = false
+		for s in data.sessions {
+			if s.name == session.name {
+				println(s)
+				session.id = s.id
+				session.values = s.values
+				session.is_new = false
+				println('session: session.id')
+				return
+			}
+		}
+		return error('Token does not contain a session named ${session.name}')
+		// session.id = data.jti
+		// session.values = data.sessions[session.name]
+		// session.is_new = false
 	} else {
 		return error('Malformed Authorization header')
 	}
@@ -173,7 +185,6 @@ fn (store JsonWebTokenStore) new_token(session Session) !string {
 
 	json_header := json.encode(header)
 	json_payload := json.encode(payload)
-	println(json_payload)
 
 	encoded_header := base64.url_encode(json_header.bytes())
 	encoded_payload := base64.url_encode(json_payload.bytes())
@@ -213,8 +224,7 @@ fn (store JsonWebTokenStore) new_payload(session Session) JsonWebTokenPayload {
 		new_nbf = time.now().add(store.valid_start)
 	}
 
-	mut new_sessions := map[string]string{}
-	new_sessions[session.name] = session.values
+	mut new_sessions := [session]
 
 	payload := JsonWebTokenPayload{
 		aud: store.audience
@@ -222,7 +232,7 @@ fn (store JsonWebTokenStore) new_payload(session Session) JsonWebTokenPayload {
 		exp: new_exp.unix_time()
 		nbf: new_nbf.unix_time()
 		iat: time.now().unix_time()
-		jti: session.id
+		jti: 'token_${rand.uuid_v4()}'
 		sessions: new_sessions
 	}
 
@@ -239,9 +249,9 @@ fn (store JsonWebTokenStore) decode_token(token string) !JsonWebTokenPayload {
 
 		if hmac.equal(decoded_signature, signature_mirror) {
 			json_payload := base64.url_decode(split_token[1]).bytestr()
-			println(json_payload)
-			payload := json.decode[JsonWebTokenPayload](json_payload)!
-			println(payload)
+			// println(json_payload)
+			payload := json.decode(JsonWebTokenPayload, json_payload)!
+			// println(payload)
 			// store.validate_token(payload)!
 			return payload
 		} else {
