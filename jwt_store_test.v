@@ -59,9 +59,9 @@ fn test_new_session() {
 	opts_defaults := JsonWebTokenStoreOptions{
 		secret: 'test'
 	}
-	mut header := http.Header{}
+	mut request := http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
 	if mut store := new_jwt_store(opts_defaults) {
-		mut session := store.new(mut header, 'test_session')
+		mut session := store.new(request, 'test_session')
 		assert session.name == 'test_session'
 	} else {
 		assert false // failed to create session
@@ -69,9 +69,9 @@ fn test_new_session() {
 	//
 	// Should handle existing and invalid authorization header
 	//
-	header.add(http.CommonHeader.authorization, 'Bearer test')
+	request.header.add(http.CommonHeader.authorization, 'Bearer test')
 	if mut store := new_jwt_store(opts_defaults) {
-		mut session := store.new(mut header, 'test_session')
+		mut session := store.new(request, 'test_session')
 		assert session.name == 'test_session'
 	} else {
 		assert false // failed to create session
@@ -84,10 +84,11 @@ fn test_save_session() {
 	mut opts := JsonWebTokenStoreOptions{
 		secret: 'test'
 	}
+	request := http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
 	mut header := http.Header{} // used as both request and response
 	// All defaults
 	if mut store := new_jwt_store(opts) {
-		mut session := store.new(mut header, 'test_session')
+		mut session := store.new(request, 'test_session')
 		store.save(mut header, mut session) or {
 			assert false // failed to save session
 			return
@@ -108,20 +109,20 @@ fn test_new_save() {
 	opts := JsonWebTokenStoreOptions{
 		secret: 'test'
 	}
-	mut header := http.Header{} // used as both request and response
+	mut request := http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
 	mut store := new_jwt_store(opts) or {
 		assert false // Should not happen, see test_new_jwt_store
 		return
 	}
 	// Create new session, add some data to it and save it to the header
-	mut session := store.new(mut header, 'test_session')
+	mut session := store.new(request, 'test_session')
 	session.values = '453636'
-	store.save(mut header, mut session) or {
+	store.save(mut request.header, mut session) or {
 		assert false // failed to save session
 		return
 	}
 	// Attempt to read the data from the header to a new session
-	session = store.new(mut header, 'test_session')
+	session = store.new(request, 'test_session')
 	assert session.values == '453636'
 }
 
@@ -132,18 +133,18 @@ fn test_new_save_nfb() {
 		secret: 'test'
 		valid_from: time.now().add(12 * time.hour)
 	}
-	mut header := http.Header{}
+	mut request := http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
 	mut store := new_jwt_store(opts) or {
 		assert false // Should not happen, see test_new_jwt_store
 		return
 	}
-	mut session := store.new(mut header, 'test_session')
+	mut session := store.new(request, 'test_session')
 	session.values = 'nbf test'
-	store.save(mut header, mut session) or {
+	store.save(mut request.header, mut session) or {
 		assert false // failed to save session
 		return
 	}
-	session = store.new(mut header, 'test_session')
+	session = store.new(request, 'test_session')
 	assert session.values == ''
 }
 
@@ -153,18 +154,18 @@ fn test_new_save_exp() {
 		secret: 'test'
 		valid_until: time.now().add(-12 * time.hour)
 	}
-	mut header := http.Header{}
+	mut request := http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
 	mut store := new_jwt_store(opts) or {
 		assert false // Should not happen, see test_new_jwt_store
 		return
 	}
-	mut session := store.new(mut header, 'test_session')
+	mut session := store.new(request, 'test_session')
 	session.values = 'exp test'
-	store.save(mut header, mut session) or {
+	store.save(mut request.header, mut session) or {
 		assert false // failed to save session
 		return
 	}
-	session = store.new(mut header, 'test_session')
+	session = store.new(request, 'test_session')
 	assert session.values == ''
 }
 
@@ -174,18 +175,18 @@ fn test_new_save_aud() {
 		secret: 'test'
 		audience: 'nobody'
 	}
-	mut header := http.Header{}
+	mut request := http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
 	mut store := new_jwt_store(opts) or {
 		assert false // Should not happen, see test_new_jwt_store
 		return
 	}
-	mut session := store.new(mut header, 'test_session')
+	mut session := store.new(request, 'test_session')
 	session.values = 'aud test'
-	store.save(mut header, mut session) or {
+	store.save(mut request.header, mut session) or {
 		assert false // failed to save session
 		return
 	}
-	session = store.new(mut header, 'test_session')
+	session = store.new(request, 'test_session')
 	assert session.values == ''
 }
 
@@ -195,18 +196,18 @@ fn test_new_save_iat() {
 		secret: 'test'
 		only_from: time.now().add(12 * time.hour)
 	}
-	mut header := http.Header{}
+	mut request := http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
 	mut store := new_jwt_store(opts) or {
 		assert false // Should not happen, see test_new_jwt_store
 		return
 	}
-	mut session := store.new(mut header, 'test_session')
+	mut session := store.new(request, 'test_session')
 	session.values = 'iat test'
-	store.save(mut header, mut session) or {
+	store.save(mut request.header, mut session) or {
 		assert false // failed to save session
 		return
 	}
-	session = store.new(mut header, 'test_session')
+	session = store.new(request, 'test_session')
 	assert session.values == ''
 }
 
