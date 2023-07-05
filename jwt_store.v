@@ -126,13 +126,13 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 *
 */
 
-pub fn (mut store JsonWebTokenStore) get(mut request_header http.Header, name string) Session {
+pub fn (mut store JsonWebTokenStore) get(request http.Request, name string) Session {
 	return Session{}
 }
 
-pub fn (mut store JsonWebTokenStore) new(mut request_header http.Header, name string) Session {
+pub fn (mut store JsonWebTokenStore) new(request http.Request, name string) Session {
 	mut session := new_session(name)
-	store.load_token(mut request_header, mut session) or {
+	store.load_token(request.header, mut session) or {
 		session.id = 'session_${rand.uuid_v4()}'
 		return session
 	}
@@ -154,7 +154,7 @@ pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut s
 */
 
 // load_token parses the token from the `Authorization` header and loads the data into the session.
-fn (mut store JsonWebTokenStore) load_token(mut request_header http.Header, mut session Session) ! {
+fn (mut store JsonWebTokenStore) load_token(request_header http.Header, mut session Session) ! {
 	auth_header := request_header.get(http.CommonHeader.authorization) or {
 		return error('Authorization header is missing')
 	}
