@@ -126,14 +126,10 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 *
 */
 
-// get attempts to load session data from the store. If successful, it caches the loaded session in
-// the registry and then returns the session. Otherwise it returns a new empty session.
 pub fn (mut store JsonWebTokenStore) get(mut request_header http.Header, name string) Session {
 	return Session{}
 }
 
-// new attempts to load session data from the store. If successful it returns the loaded session, otherwise
-// it returns a new empty session.
 pub fn (mut store JsonWebTokenStore) new(mut request_header http.Header, name string) Session {
 	mut session := new_session(name)
 	store.load_token(mut request_header, mut session) or {
@@ -144,7 +140,7 @@ pub fn (mut store JsonWebTokenStore) new(mut request_header http.Header, name st
 }
 
 // save puts `Session.values` in an `Authorization` header in the response `Header`.
-// All session data is put in a property of the payload using the same name as the `Session.name`.
+// All session data is put in payload.sessions[session.name].
 pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut session Session) ! {
 	new_jwt := store.new_token(session)!
 	auth_header := 'Bearer ${new_jwt}'
