@@ -38,6 +38,7 @@ pub struct JsonWebTokenStoreOptions {
 	valid_until time.Time
 }
 
+// The JsonWebTokenStore allows to store session data on the client in the form of a JWT.
 pub struct JsonWebTokenStore {
 	JsonWebTokenStoreOptions //
 	// The CookieStore can save multiple sessions on the same response. It does so by setting a different
@@ -57,29 +58,20 @@ struct JsonWebTokenHeader {
 }
 
 // JsonWebTokenPayload contains RFC7519 claims together with session data.
-// The `sub` claim is not used by the store.
-// The comments explain how to obtain these values.
+// Note: the `sub` claim is not used by this store.
+// The comments explain how the values are set by the store.
 struct JsonWebTokenPayload {
 	// iss is the identifier of the issuer of the token.
-	// JsonWebTokenStoreOptions.app_name
 	iss string
 	// aud is the identifier of the application that will use the token.
-	// JsonWebTokenStoreOptions.app_name
-	// JsonWebTokenStoreOptions.audience
 	aud string
 	// exp is the expiration timestamp of the token.
-	// time.now().add(JsonWebTokenStoreOptions.valid_end).unix_time()
-	// JsonWebTokenStoreOptions.valid_until.unix_time()
 	exp i64
 	// nbf is the timestamp from the moment the token is considered valid.
-	// time.now().add(JsonWebTokenStoreOptions.valid_start).unix_time()
-	// JsonWebTokenStoreOptions.valid_from.unix_time()
 	nbf i64
 	// iat is the timestamp of when the token was issued.
-	// time.now().unix_time()
 	iat i64
 	// jti is the unique id of the token
-	// Session.id
 	jti string
 	// sessions is an array of Session.
 	sessions []Session
@@ -134,10 +126,14 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 *
 */
 
+// get attempts to load session data from the store. If successful, it caches the loaded session in
+// the registry and then returns the session. Otherwise it returns a new empty session.
 pub fn (mut store JsonWebTokenStore) get(mut request_header http.Header, name string) Session {
 	return Session{}
 }
 
+// new attempts to load session data from the store. If successful it returns the loaded session, otherwise
+// it returns a new empty session.
 pub fn (mut store JsonWebTokenStore) new(mut request_header http.Header, name string) Session {
 	mut session := new_session(name)
 	store.load_token(mut request_header, mut session) or {
@@ -151,12 +147,6 @@ pub fn (mut store JsonWebTokenStore) new(mut request_header http.Header, name st
 // All session data is put in a property of the payload using the same name as the `Session.name`.
 pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut session Session) ! {
 	new_jwt := store.new_token(session)!
-	// TODO preserve sessions with different names to allow multiple sessions.
-	// the Store.new method only returns one Session struct.
-	// the request_header is not changed, but it is not accessible from the save method.
-	// In the new method, a cache must be created to persist in the store for a certain amount of time.
-	// jti can be used to identify the cache entry.
-	// cache entries mut not persist too long or memory will be filled.
 	auth_header := 'Bearer ${new_jwt}'
 	response_header.add(http.CommonHeader.authorization, auth_header)
 }
