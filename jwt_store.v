@@ -6,8 +6,6 @@ import encoding.base64
 import net.http
 import rand
 import time
-// Can't use json2: https://github.com/vlang/v/issues/18734
-// import x.json2 as json 
 import json
 
 // JsonWebTokenStoreOptions is the struct to provide to new_jwt_store.
@@ -41,7 +39,15 @@ pub struct JsonWebTokenStoreOptions {
 }
 
 pub struct JsonWebTokenStore {
-	JsonWebTokenStoreOptions // TODO implement cache and technique to keep cache small.
+	JsonWebTokenStoreOptions //
+	// The CookieStore can save multiple sessions on the same response. It does so by setting a different
+	// cookie for each session.
+	// A response however, cannot hold multiple Authentication headers. Multiple sessions could still
+	// be saved in a single header, but it introduces some complexity:
+	// Each time a single JWT is loaded, more than one session may also be loaded. These sessions must
+	// be preserved.
+	// TODO: implement cache and technique to keep cache small. This cache should contain all the sessions
+	// that the JWT held.
 	// cache map[string]string
 }
 
@@ -213,7 +219,7 @@ fn (store JsonWebTokenStore) new_payload(session Session) JsonWebTokenPayload {
 		if store.valid_until.unix != 0 {
 			new_exp = store.valid_until
 		} else {
-		new_exp = time.now().add(12 * time.hour)
+			new_exp = time.now().add(12 * time.hour)
 		}
 	} else {
 		new_exp = time.now().add(store.valid_end)
@@ -224,7 +230,7 @@ fn (store JsonWebTokenStore) new_payload(session Session) JsonWebTokenPayload {
 		if store.valid_from.unix != 0 {
 			new_nbf = store.valid_from
 		} else {
-		new_nbf = time.now()
+			new_nbf = time.now()
 		}
 	} else {
 		new_nbf = time.now().add(store.valid_start)
@@ -232,7 +238,7 @@ fn (store JsonWebTokenStore) new_payload(session Session) JsonWebTokenPayload {
 
 	mut new_sessions := [session]
 
-	payload := JsonWebTokenPayload{
+	return JsonWebTokenPayload{
 		aud: store.audience
 		iss: store.issuer
 		exp: new_exp.unix_time()
@@ -241,8 +247,6 @@ fn (store JsonWebTokenStore) new_payload(session Session) JsonWebTokenPayload {
 		jti: 'token_${rand.uuid_v4()}'
 		sessions: new_sessions
 	}
-
-	return payload
 }
 
 // decode_token returns a decoded payload if the token signature and payload are both valid.
