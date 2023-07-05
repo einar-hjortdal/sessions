@@ -6,8 +6,6 @@ import net.http
 // get should return a session cached in the registry.
 // new should return a session from the store or create a new one.
 // save should persist session to the underlying store implementation.
-//
-// See redis_store.v for an example.
 pub interface Store {
 mut:
 	get(request http.Request, name string) Session

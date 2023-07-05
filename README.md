@@ -1,20 +1,16 @@
 # sessions
 
-sessions is a library for managing sessions in web applications written in the V language.
+sessions is a web-framework-agnostic library for managing sessions in web applications written in the 
+V language.
 
-<!-- Framework-agnostic but also features a middleware function for vweb. -->
+## Stores
 
-## JWT store
-
-Documented [here](./jwt_store.md)
-
-## Redis store
-
-> Broken: see [#25](https://github.com/patrickpissurno/vredis/issues/25). Furthermore, the package relied 
-  on unmerged PR [#26](https://github.com/patrickpissurno/vredis/pull/26). New Redis library is being 
-  developed [here](https://github.com/Coachonko/redis)
-
-Documented [here](./redis_store.md)
+- JWT ([documentation](./jwt_store.md))
+- Cookie ([documentation](./cookie_store.md))
+- Redis ([documentation](./redis_store.md))
+  Note: currently broken: see [#25](https://github.com/patrickpissurno/vredis/issues/25). Furthermore, 
+  the package relied on unmerged PR [#26](https://github.com/patrickpissurno/vredis/pull/26). New Redis 
+  library is being developed [here](https://github.com/Coachonko/redis)
 
 ## Notes
 
