@@ -2,10 +2,18 @@ module sessions
 
 import net.http
 
-fn test_new_cookie() {
-	opts := CookieOptions{
+fn setup_request() http.Request {
+	return http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
+}
+
+fn setup_basic_cookie_opts() CookieOptions {
+	return CookieOptions{
 		secret: 'test'
 	}
+}
+
+fn test_new_cookie() {
+	opts := setup_basic_cookie_opts()
 	test_cookie := new_cookie('test_name', 'test_value', opts) or {
 		assert false
 		return
@@ -16,9 +24,7 @@ fn test_new_cookie() {
 }
 
 fn test_decoding() {
-	opts := CookieOptions{
-		secret: 'test'
-	}
+	opts := setup_basic_cookie_opts()
 	test_cookie := new_cookie('test_name', 'test_value', opts) or {
 		assert false
 		return
@@ -31,9 +37,7 @@ fn test_decoding() {
 }
 
 fn test_set_cookie() {
-	opts := CookieOptions{
-		secret: 'test'
-	}
+	opts := setup_basic_cookie_opts()
 	test_cookie := new_cookie('test_name', 'test_value', opts) or {
 		assert false
 		return
@@ -49,4 +53,25 @@ fn test_set_cookie() {
 	}
 }
 
-// TODO test get_cookie: need to create a dummy http.Request
+fn test_get_missing_cookie() {
+	request := setup_request()
+	get_cookie(request, 'test_name') or {
+		assert true
+		return
+	}
+}
+
+fn test_get_set_cookie() {
+	mut request := setup_request()
+	opts := setup_basic_cookie_opts()
+	test_cookie := new_cookie('test_name', 'test_value', opts) or {
+		assert false
+		return
+	}
+	request.cookies['test_name'] = test_cookie.value
+	cookie := get_cookie(request, 'test_name') or {
+		assert false
+		return
+	}
+	assert cookie == test_cookie.value
+}
