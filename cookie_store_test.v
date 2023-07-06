@@ -3,6 +3,10 @@ module sessions
 import net.http
 import json
 
+fn setup_request() http.Request {
+	return http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
+}
+
 fn test_cookie_store() {
 	cookie_store_opts := CookieStoreOptions{
 		cookie_opts: CookieOptions{
@@ -10,7 +14,7 @@ fn test_cookie_store() {
 		}
 	}
 	mut store := new_cookie_store(cookie_store_opts)
-	mut request := http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
+	mut request := setup_request()
 
 	mut session := store.new(request, 'test_session')
 
@@ -20,7 +24,10 @@ fn test_cookie_store() {
 
 	set_cookie_header := request.header.get(http.CommonHeader.set_cookie)!
 	cookie_value := set_cookie_header.trim_string_left('test_session=')
-	decoded_value := decode_value(cookie_value, store.cookie_opts.secret) or { panic(err) }
+	decoded_value := decode_value(cookie_value, store.cookie_opts.secret) or {
+		assert false
+		return
+	}
 	decoded_session := json.decode(Session, decoded_value)!
 	assert decoded_session.id == session.id
 	assert decoded_session.values == 'test_value'

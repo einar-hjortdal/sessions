@@ -3,6 +3,10 @@ module sessions
 import time
 import net.http
 
+fn setup_request() http.Request {
+	return http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
+}
+
 // test_new_jwt_store checks whether all options are handled as expected.
 fn test_new_jwt_store() {
 	// must return an error when options do not contain a secret.
@@ -59,7 +63,7 @@ fn test_new_session() {
 	opts_defaults := JsonWebTokenStoreOptions{
 		secret: 'test'
 	}
-	mut request := http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
+	mut request := setup_request()
 	if mut store := new_jwt_store(opts_defaults) {
 		mut session := store.new(request, 'test_session')
 		assert session.name == 'test_session'
@@ -84,7 +88,7 @@ fn test_save_session() {
 	mut opts := JsonWebTokenStoreOptions{
 		secret: 'test'
 	}
-	request := http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
+	request := setup_request()
 	mut header := http.Header{} // used as both request and response
 	// All defaults
 	if mut store := new_jwt_store(opts) {
@@ -109,7 +113,7 @@ fn test_new_save() {
 	opts := JsonWebTokenStoreOptions{
 		secret: 'test'
 	}
-	mut request := http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
+	mut request := setup_request()
 	mut store := new_jwt_store(opts) or {
 		assert false // Should not happen, see test_new_jwt_store
 		return
@@ -133,7 +137,7 @@ fn test_new_save_nfb() {
 		secret: 'test'
 		valid_from: time.now().add(12 * time.hour)
 	}
-	mut request := http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
+	mut request := setup_request()
 	mut store := new_jwt_store(opts) or {
 		assert false // Should not happen, see test_new_jwt_store
 		return
@@ -154,7 +158,7 @@ fn test_new_save_exp() {
 		secret: 'test'
 		valid_until: time.now().add(-12 * time.hour)
 	}
-	mut request := http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
+	mut request := setup_request()
 	mut store := new_jwt_store(opts) or {
 		assert false // Should not happen, see test_new_jwt_store
 		return
@@ -175,7 +179,7 @@ fn test_new_save_aud() {
 		secret: 'test'
 		audience: 'nobody'
 	}
-	mut request := http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
+	mut request := setup_request()
 	mut store := new_jwt_store(opts) or {
 		assert false // Should not happen, see test_new_jwt_store
 		return
@@ -196,7 +200,7 @@ fn test_new_save_iat() {
 		secret: 'test'
 		only_from: time.now().add(12 * time.hour)
 	}
-	mut request := http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
+	mut request := setup_request()
 	mut store := new_jwt_store(opts) or {
 		assert false // Should not happen, see test_new_jwt_store
 		return
