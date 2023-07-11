@@ -24,6 +24,12 @@ pub struct JsonWebTokenStoreOptions {
 	issuer string
 	// only_from is a timestimp before which no token is considered valid. Defaults to July 1st 2023.
 	only_from time.Time
+	// prefix is a string used to construct the name of the custom HTTP header where the JWT is stored.
+	// Defaults to 'Coachonko_'.
+	// The HTTP header key is built with the `prefix` followed by the `Session.name`.
+	// Please remember to use HTTP-header friendly strings for both `prefix` and `Session.name`, otherwise
+	// `Store.save` will return an error.
+	prefix string
 	// secret is a string used to sign the token.
 	secret string
 	// valid_start is the time from the moment the token is created to the moment it becomes valid.
@@ -39,17 +45,9 @@ pub struct JsonWebTokenStoreOptions {
 }
 
 // The JsonWebTokenStore allows to store session data on the client in the form of a JWT.
+// Each JWT is stored in its own custom HTTP header.
 pub struct JsonWebTokenStore {
-	JsonWebTokenStoreOptions //
-	// The CookieStore can save multiple sessions on the same response. It does so by setting a different
-	// cookie for each session.
-	// A response however, cannot hold multiple Authentication headers. Multiple sessions could still
-	// be saved in a single header, but it introduces some complexity:
-	// Each time a single JWT is loaded, more than one session may also be loaded. These sessions must
-	// be preserved.
-	// TODO: implement cache and technique to keep cache small. This cache should contain all the sessions
-	// that the JWT held.
-	// cache map[string]string
+	JsonWebTokenStoreOptions
 }
 
 struct JsonWebTokenHeader {
@@ -73,8 +71,8 @@ struct JsonWebTokenPayload {
 	iat i64
 	// jti is the unique id of the token
 	jti string
-	// sessions is an array of Session.
-	sessions []Session
+	// session is the stored Session.
+	session Session
 }
 
 // new_jwt_store creates a JsonWebTokenStore with the given options.
@@ -105,12 +103,18 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 		}
 	}
 
+	mut new_prefix := opts.prefix
+	if new_prefix == '' {
+		new_prefix = 'Coachonko_'
+	}
+
 	return JsonWebTokenStore{
 		JsonWebTokenStoreOptions: JsonWebTokenStoreOptions{
 			app_name: new_app_name
 			audience: new_audience
 			issuer: new_issuer
 			only_from: new_only_from
+			prefix: new_prefix
 			secret: opts.secret
 			valid_start: opts.valid_start
 			valid_end: opts.valid_end
@@ -143,8 +147,7 @@ pub fn (mut store JsonWebTokenStore) new(request http.Request, name string) Sess
 // All session data is put in payload.sessions[session.name].
 pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut session Session) ! {
 	new_jwt := store.new_token(session)!
-	auth_header := 'Bearer ${new_jwt}'
-	response_header.add(http.CommonHeader.authorization, auth_header)
+	response_header.add_custom('${store.prefix}${session.name}', new_jwt)!
 }
 
 /*
@@ -155,24 +158,17 @@ pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut s
 
 // load_token parses the token from the `Authorization` header and loads the data into the session.
 fn (mut store JsonWebTokenStore) load_token(request_header http.Header, mut session Session) ! {
-	auth_header := request_header.get(http.CommonHeader.authorization) or {
-		return error('Authorization header is missing')
+	session_header := request_header.get_custom('${store.prefix}${session.name}') or {
+		return error('Header is missing')
 	}
-	if auth_header.starts_with('Bearer ') {
-		token := auth_header.trim_string_left('Bearer ')
-		data := store.decode_token(token)!
-		for s in data.sessions {
-			if s.name == session.name {
-				session.id = s.id
-				session.values = s.values
-				session.is_new = false
-				return
-			}
-		}
-		return error('Token does not contain a session named ${session.name}')
-	} else {
-		return error('Malformed Authorization header')
+	data := store.decode_token(session_header)!
+	if data.session.name == session.name {
+		session.id = data.session.id
+		session.values = data.session.values
+		session.is_new = false
+		return
 	}
+	return error('Token does not contain a session named ${session.name}')
 }
 
 fn (store JsonWebTokenStore) new_token(session Session) !string {
@@ -222,8 +218,6 @@ fn (store JsonWebTokenStore) new_payload(session Session) JsonWebTokenPayload {
 		new_nbf = time.now().add(store.valid_start)
 	}
 
-	mut new_sessions := [session]
-
 	return JsonWebTokenPayload{
 		aud: store.audience
 		iss: store.issuer
@@ -231,7 +225,7 @@ fn (store JsonWebTokenStore) new_payload(session Session) JsonWebTokenPayload {
 		nbf: new_nbf.unix_time()
 		iat: time.now().unix_time()
 		jti: 'token_${rand.uuid_v4()}'
-		sessions: new_sessions
+		session: session
 	}
 }
 

@@ -73,7 +73,7 @@ fn test_new_session() {
 	//
 	// Should handle existing and invalid authorization header
 	//
-	request.header.add(http.CommonHeader.authorization, 'Bearer test')
+	request.header.add_custom('Coachonko_test_session', 'test')!
 	if mut store := new_jwt_store(opts_defaults) {
 		mut session := store.new(request, 'test_session')
 		assert session.name == 'test_session'
@@ -97,7 +97,7 @@ fn test_save_session() {
 			assert false // failed to save session
 			return
 		}
-		auth_header := header.get(http.CommonHeader.authorization) or {
+		auth_header := header.get_custom('Coachonko_test_session') or {
 			assert false // authorization header missing
 			return
 		}
@@ -215,4 +215,29 @@ fn test_new_save_iat() {
 	assert session.values == ''
 }
 
-// TODO test multiple sessions
+fn test_multiple_sessions() {
+	opts_defaults := JsonWebTokenStoreOptions{
+		secret: 'test'
+	}
+	mut request := setup_request()
+	mut store := new_jwt_store(opts_defaults) or {
+		assert false // Should not happen, see test_new_jwt_store
+		return
+	}
+	mut session_one := store.new(request, 'test_session_one')
+	session_one.values = 'test value number one'
+	mut session_two := store.new(request, 'test_session_two')
+	session_two.values = 'test value number two'
+	store.save(mut request.header, mut session_one) or {
+		assert false // failed to save session
+		return
+	}
+	store.save(mut request.header, mut session_two) or {
+		assert false // failed to save session
+		return
+	}
+	session_one = store.new(request, 'test_session_one')
+	session_two = store.new(request, 'test_session_two')
+	assert session_one.values == 'test value number one'
+	assert session_two.values == 'test value number two'
+}

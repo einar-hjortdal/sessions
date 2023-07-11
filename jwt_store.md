@@ -22,8 +22,8 @@ jwtso := JsonWebTokenStoreOptions{
 // Create a new store
 jwt_store := new_jwt_store(jwtso)
 
-// Use the JsonWebTokenStore to create or load existing sessions
-// Note: multiple sessions are currently not working, only one session can be stored in the JWT.
+// Use the JsonWebTokenStore to create or load existing sessions.
+// Note: More than one session can be stored, each is stored in its own custom HTTP header.
 mut session := jwt_store.new(request, 'demo')
 
 // Edit sessions and then save the changes

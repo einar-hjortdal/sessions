@@ -1,7 +1,7 @@
 # Redis store
 
 Redis store stores session data in a Redis instance. A cookie is given to the client, this cookie contains 
-a session id used to match the client to its session data.
+the session id used to match the client to its session data.
 
 ## Usage
 
@@ -12,8 +12,8 @@ Install with `v install Coachonko.sessions`
 import coachonko.sessions
 
 // Create options structs
-redis_pool_opts := redis.PoolOpts{
-  // Refer to vredis documentation
+redis_opts := redis.Options{
+  // Refer to Coachonko/redis documentation
 }
 cookie_opts := sessions.CookieOptions{
   // Provide a secret to encrypt the value of the cookies.
@@ -21,7 +21,7 @@ cookie_opts := sessions.CookieOptions{
   secret: os.get_env(COOKIE_SECRET)
 }
 rso := RedisStoreOptions{
-  pool_opts: redis_pool_opts
+  redis_opts: redis_opts
   cookie_opts: cookie_opts
 }
 
@@ -30,7 +30,10 @@ redis_store := new_redis_store(rso)
 
 // Use the RedisStore to create or load existing sessions
 mut session := redis_store.new(request, 'demo')
+
 // Edit sessions and then save the changes
-session.values['subscribed'] = false
+// Session.values accepts a string: encode your data into a string using, for example, json.
+session.values = json.encode(MySessionData, data) // MySessionData is defined by you, the user.
+
 redis_store.save(response_header, session)
 ```
