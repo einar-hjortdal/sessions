@@ -144,8 +144,7 @@ pub fn (mut store JsonWebTokenStore) new(request http.Request, name string) Sess
 	return session
 }
 
-// save puts `Session.values` in an `Authorization` header in the response `Header`.
-// All session data is put in payload.sessions[session.name].
+// save stores the `Session` in the response `Header`.
 pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut session Session) ! {
 	new_jwt := store.new_token(session)!
 	response_header.add_custom('${store.prefix}${session.name}', new_jwt)!
@@ -157,7 +156,9 @@ pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut s
 *
 */
 
-// load_token parses the token from the `Authorization` header and loads the data into the session.
+// load_token parses the token from the header and loads the data into the session.
+// It returns an error if the token is missing or if `Session.name` does not match the one in the parsed
+// token.
 fn (mut store JsonWebTokenStore) load_token(request_header http.Header, mut session Session) ! {
 	session_header := request_header.get_custom('${store.prefix}${session.name}') or {
 		return error('Header is missing')
