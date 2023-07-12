@@ -65,18 +65,18 @@ fn test_new_session() {
 	}
 	mut request := setup_request()
 	if mut store := new_jwt_store(opts_defaults) {
-		mut session := store.new(request, 'test_session')
-		assert session.name == 'test_session'
+		mut session := store.new(request, 'Test-Session')
+		assert session.name == 'Test-Session'
 	} else {
 		assert false // failed to create session
 	}
 	//
 	// Should handle existing and invalid authorization header
 	//
-	request.header.add_custom('Coachonko_test_session', 'test')!
+	request.header.add_custom('Coachonko-Test-Session', 'test')!
 	if mut store := new_jwt_store(opts_defaults) {
-		mut session := store.new(request, 'test_session')
-		assert session.name == 'test_session'
+		mut session := store.new(request, 'Test-Session')
+		assert session.name == 'Test-Session'
 	} else {
 		assert false // failed to create session
 	}
@@ -92,12 +92,12 @@ fn test_save_session() {
 	mut header := http.Header{} // used as both request and response
 	// All defaults
 	if mut store := new_jwt_store(opts) {
-		mut session := store.new(request, 'test_session')
+		mut session := store.new(request, 'Test-Session')
 		store.save(mut header, mut session) or {
 			assert false // failed to save session
 			return
 		}
-		auth_header := header.get_custom('Coachonko_test_session') or {
+		auth_header := header.get_custom('Coachonko-Test-Session') or {
 			assert false // authorization header missing
 			return
 		}
@@ -119,14 +119,14 @@ fn test_new_save() {
 		return
 	}
 	// Create new session, add some data to it and save it to the header
-	mut session := store.new(request, 'test_session')
+	mut session := store.new(request, 'Test-Session')
 	session.values = '453636'
 	store.save(mut request.header, mut session) or {
 		assert false // failed to save session
 		return
 	}
 	// Attempt to read the data from the header to a new session
-	session = store.new(request, 'test_session')
+	session = store.new(request, 'Test-Session')
 	assert session.values == '453636'
 }
 
@@ -142,13 +142,13 @@ fn test_new_save_nfb() {
 		assert false // Should not happen, see test_new_jwt_store
 		return
 	}
-	mut session := store.new(request, 'test_session')
+	mut session := store.new(request, 'Test-Session')
 	session.values = 'nbf test'
 	store.save(mut request.header, mut session) or {
 		assert false // failed to save session
 		return
 	}
-	session = store.new(request, 'test_session')
+	session = store.new(request, 'Test-Session')
 	assert session.values == ''
 }
 
@@ -163,13 +163,13 @@ fn test_new_save_exp() {
 		assert false // Should not happen, see test_new_jwt_store
 		return
 	}
-	mut session := store.new(request, 'test_session')
+	mut session := store.new(request, 'Test-Session')
 	session.values = 'exp test'
 	store.save(mut request.header, mut session) or {
 		assert false // failed to save session
 		return
 	}
-	session = store.new(request, 'test_session')
+	session = store.new(request, 'Test-Session')
 	assert session.values == ''
 }
 
@@ -184,13 +184,13 @@ fn test_new_save_aud() {
 		assert false // Should not happen, see test_new_jwt_store
 		return
 	}
-	mut session := store.new(request, 'test_session')
+	mut session := store.new(request, 'Test-Session')
 	session.values = 'aud test'
 	store.save(mut request.header, mut session) or {
 		assert false // failed to save session
 		return
 	}
-	session = store.new(request, 'test_session')
+	session = store.new(request, 'Test-Session')
 	assert session.values == ''
 }
 
@@ -205,13 +205,13 @@ fn test_new_save_iat() {
 		assert false // Should not happen, see test_new_jwt_store
 		return
 	}
-	mut session := store.new(request, 'test_session')
+	mut session := store.new(request, 'Test-Session')
 	session.values = 'iat test'
 	store.save(mut request.header, mut session) or {
 		assert false // failed to save session
 		return
 	}
-	session = store.new(request, 'test_session')
+	session = store.new(request, 'Test-Session')
 	assert session.values == ''
 }
 
@@ -224,9 +224,9 @@ fn test_multiple_sessions() {
 		assert false // Should not happen, see test_new_jwt_store
 		return
 	}
-	mut session_one := store.new(request, 'test_session_one')
+	mut session_one := store.new(request, 'Test-Session-One')
 	session_one.values = 'test value number one'
-	mut session_two := store.new(request, 'test_session_two')
+	mut session_two := store.new(request, 'Test-Session-Two')
 	session_two.values = 'test value number two'
 	store.save(mut request.header, mut session_one) or {
 		assert false // failed to save session
@@ -236,8 +236,9 @@ fn test_multiple_sessions() {
 		assert false // failed to save session
 		return
 	}
-	session_one = store.new(request, 'test_session_one')
-	session_two = store.new(request, 'test_session_two')
+	println(request.header)
+	session_one = store.new(request, 'Test-Session-One')
+	session_two = store.new(request, 'Test-Session-Two')
 	assert session_one.values == 'test value number one'
 	assert session_two.values == 'test value number two'
 }

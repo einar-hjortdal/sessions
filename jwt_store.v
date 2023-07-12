@@ -105,8 +105,9 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 
 	mut new_prefix := opts.prefix
 	if new_prefix == '' {
-		new_prefix = 'Coachonko_'
+		new_prefix = 'Coachonko-'
 	}
+	// TODO validate and format prefixes?
 
 	return JsonWebTokenStore{
 		JsonWebTokenStoreOptions: JsonWebTokenStoreOptions{
