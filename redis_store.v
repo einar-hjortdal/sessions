@@ -41,7 +41,7 @@ pub fn new_redis_store(rso RedisStoreOptions, co CookieOptions, mut ro redis.Opt
 	// Store session on Redis for 30 minutes if cookie Max-Age is 0
 	mut new_expire := co.max_age
 	if new_expire == 0 {
-		new_expire = 60 * time.second
+		new_expire = 30 * time.minute
 	}
 
 	new_client := redis.new_client(mut ro)
