@@ -71,7 +71,7 @@ fn test_new_session() {
 		assert false // failed to create session
 	}
 	//
-	// Should handle existing and invalid authorization header
+	// Should handle existing and invalid header
 	//
 	request.header.add_custom('Coachonko-Test-Session', 'test')!
 	if mut store := new_jwt_store(opts_defaults) {
@@ -97,11 +97,11 @@ fn test_save_session() {
 			assert false // failed to save session
 			return
 		}
-		auth_header := header.get_custom('Coachonko-Test-Session') or {
-			assert false // authorization header missing
+		session_header := header.get_custom('Coachonko-Test-Session') or {
+			assert false // header missing
 			return
 		}
-		assert auth_header != ''
+		assert session_header != ''
 	} else {
 		assert false // failed to create session
 	}
