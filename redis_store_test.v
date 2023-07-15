@@ -31,7 +31,6 @@ fn test_new_redis_store() {
 	store := setup_default_store() or { panic(err) }
 	assert store.max_length == 4096
 	assert store.key_prefix == 'session_'
-	assert store.expire == 30 * time.minute
 }
 
 fn test_new() {
@@ -65,25 +64,30 @@ fn test_save() {
 	mut request := setup_request()
 	mut session := store.new(mut request, 'test_session')
 	store.save(mut request.header, mut session) or { panic(err) }
-	// Verify session cookie
-	// When `RedisStore.CookieOptions.max_age <= 0` 2 `Set-Cookie` headers are set:
-	// The first one makes the existing cookie expire, the second one sets a new cookie.
-	// The default `RedisStore.CookieOptions.max_age` is set to `0`
-	set_cookie_headers := request.header.values(http.CommonHeader.set_cookie)
-	assert set_cookie_headers.len == 2
+	// The default `CookieOptions.max_age` is set to `0`.
+	// Verify session cookie has no Max-Age attribute.
+	mut set_cookie_headers := request.header.values(http.CommonHeader.set_cookie)
+	assert set_cookie_headers.len == 1
 	assert set_cookie_headers[0].starts_with('test_session') == true
-	assert set_cookie_headers[1].starts_with('test_session') == true
+	assert set_cookie_headers[0].contains('Max-Age') == false
 	// Verify session data
-	get_res := store.client.get('${store.key_prefix}${session.id}') or { panic(err) }
-	println(store.expire)
-	println(session.id)
-	println(get_res)
-
+	mut get_res := store.client.get('${store.key_prefix}${session.id}') or { panic(err) }
+	assert get_res.err() == 'nil'
 	/*
 	*
 	* Fifteen-minute store
 	*
 	*/
+	store = setup_fifteen_minute_store() or { panic(err) }
+	request = setup_request()
+	session = store.new(mut request, 'test_session')
+	store.save(mut request.header, mut session) or { panic(err) }
+	set_cookie_headers = request.header.values(http.CommonHeader.set_cookie)
+	assert set_cookie_headers.len == 1
+	assert set_cookie_headers[0].starts_with('test_session') == true
+	assert set_cookie_headers[0].contains('Max-Age') == true
+	get_res = store.client.get('${store.key_prefix}${session.id}') or { panic(err) }
+	assert get_res.val.contains('${session.id}') == true
 }
 
 fn test_new_existing() {
