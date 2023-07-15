@@ -87,7 +87,7 @@ fn test_save() {
 	assert set_cookie_headers[0].starts_with('test_session') == true
 	assert set_cookie_headers[0].contains('Max-Age') == true
 	get_res = store.client.get('${store.key_prefix}${session.id}') or { panic(err) }
-	assert get_res.val.contains('${session.id}') == true
+	assert get_res.val().contains('${session.id}') == true
 }
 
 fn test_new_existing() {

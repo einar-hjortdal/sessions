@@ -8,9 +8,9 @@ Look at the open issues and the [TODO.md](TODO.md) file to learn what kind of he
 
 ## Stores
 
-- JWT ([documentation](./jwt_store.md))
-- Cookie ([documentation](./cookie_store.md))
-- Redis ([documentation](./redis_store.md))
+- JWT ([documentation](./src/jwt_store.md))
+- Cookie ([documentation](./src/cookie_store.md))
+- Redis ([documentation](./src/redis_store.md))
 
 ## Notes
 

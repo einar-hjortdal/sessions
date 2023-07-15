@@ -115,7 +115,7 @@ fn (mut store RedisStore) set(session Session) ! {
 // load returns true if there is session data in Redis.
 fn (mut store RedisStore) load(session_id string) !Session {
 	get_res := store.client.get(store.key_prefix + session_id)!
-	mut loaded_session := json.decode(Session, get_res.val)!
+	mut loaded_session := json.decode(Session, get_res.val())!
 	if store.refresh_expire {
 		store.client.expire(store.key_prefix + session_id, store.max_age)!
 	}
