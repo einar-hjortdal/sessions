@@ -18,6 +18,7 @@ fn test_new_cookie() {
 		assert false
 		return
 	}
+	assert test_cookie.max_age == 0
 	assert test_cookie.name == 'test_name'
 	assert test_cookie.value != ''
 	// TODO test options

@@ -41,7 +41,7 @@ fn new_cookie(name string, value string, cookie_opts CookieOptions) !http.Cookie
 		domain: cookie_opts.domain
 		expires: new_expires
 		http_only: cookie_opts.http_only
-		max_age: cookie_opts.max_age
+		max_age: int(cookie_opts.max_age.seconds())
 		name: name
 		path: cookie_opts.path
 		secure: cookie_opts.secure
