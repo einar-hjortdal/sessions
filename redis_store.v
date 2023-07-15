@@ -7,11 +7,12 @@ import coachonko.redis
 
 // RedisStoreOptions is the struct to provide to new_redis_store.
 pub struct RedisStoreOptions {
-	// max_length when not provided defaults 4096 bytes.
+	// max_length limits the size of the value of the session stored in Redis. Defaults to 4096 bytes.
 	max_length int
 	// key_prefix when not provided defaults to 'session_'
 	key_prefix string
-	// refresh_expire when true resets the `EXPIRE` time when a session is loaded with `new`
+	// refresh_expire when true resets the `EXPIRE` time when a session is loaded with `new`. Defaults
+	// to false.
 	refresh_expire bool
 }
 
@@ -74,9 +75,13 @@ pub fn (mut store RedisStore) new(mut request http.Request, name string) Session
 	}
 }
 
+// save stores a `Session` in Redis and gives the client a signed cookie containing the session ID.
+// It can also be used to delete a session from Redis and from the client: when `RedisStore.max_age`
+// is set to `0` or less, then this method deletes the session data from Redis and instructs the client
+// to delete the cookie.
 pub fn (mut store RedisStore) save(mut response_header http.Header, mut session Session) ! {
 	if store.max_age <= 0 {
-		store.delete(mut response_header, mut session)!
+		store.client.del(store.key_prefix + session.id)!
 		cookie := new_cookie(session.name, '', store.CookieOptions)!
 		set_cookie(mut response_header, cookie)!
 	} else {
@@ -105,20 +110,6 @@ fn (mut store RedisStore) set(session Session) ! {
 	}
 
 	store.client.set(store.key_prefix + session.id, data, store.max_age)!
-}
-
-fn (mut store RedisStore) delete(mut response_header http.Header, mut session Session) ! {
-	// Remove data from Redis
-	store.client.del(store.key_prefix + session.id)!
-
-	// Set cookie to expire
-	mut cookie_opts := store.CookieOptions
-	cookie_opts.max_age = -1
-	cookie := new_cookie(session.name, '', cookie_opts)!
-	set_cookie(mut response_header, cookie)!
-
-	// Clear session values from memory
-	session.values = ''
 }
 
 // load returns true if there is session data in Redis.
