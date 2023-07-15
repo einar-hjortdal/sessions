@@ -12,7 +12,7 @@ Install with `v install Coachonko.sessions`
 import coachonko.sessions
 
 // Create options structs
-ro := redis.Options{
+mut ro := redis.Options{
   // Refer to Coachonko/redis documentation
 }
 co := sessions.CookieOptions{
@@ -29,7 +29,7 @@ rso := sessions.RedisStoreOptions{
 }
 
 // Create a new RedisStore
-store := new_redis_store(rso, co, mut ro)
+store := sessions.new_redis_store(rso, co, mut ro)
 
 // Use the RedisStore to create or load existing sessions
 mut session := store.new(request, 'demo')
