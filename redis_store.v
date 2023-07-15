@@ -3,7 +3,6 @@ module sessions
 import json
 import net.http
 import rand
-import time
 import coachonko.redis
 
 // RedisStoreOptions is the struct to provide to new_redis_store.
@@ -20,7 +19,6 @@ pub struct RedisStoreOptions {
 pub struct RedisStore {
 	CookieOptions
 	RedisStoreOptions
-	expire time.Duration
 mut:
 	client redis.Client
 }
@@ -38,12 +36,6 @@ pub fn new_redis_store(rso RedisStoreOptions, co CookieOptions, mut ro redis.Opt
 		new_key_prefix = 'session_'
 	}
 
-	// Store session on Redis for 30 minutes if cookie Max-Age is 0
-	mut new_expire := co.max_age
-	if new_expire == 0 {
-		new_expire = 30 * time.minute
-	}
-
 	new_client := redis.new_client(mut ro)
 
 	return &RedisStore{
@@ -52,7 +44,6 @@ pub fn new_redis_store(rso RedisStoreOptions, co CookieOptions, mut ro redis.Opt
 			max_length: new_max_length
 			key_prefix: new_key_prefix
 		}
-		expire: new_expire
 		client: new_client
 	}
 }
@@ -81,7 +72,6 @@ pub fn (mut store RedisStore) new(mut request http.Request, name string) Session
 	} else {
 		return new_redis_session(name)
 	}
-	return new_redis_session(name)
 }
 
 pub fn (mut store RedisStore) save(mut response_header http.Header, mut session Session) ! {
@@ -114,7 +104,7 @@ fn (mut store RedisStore) set(session Session) ! {
 		return error('The value to store is too big')
 	}
 
-	store.client.set(store.key_prefix + session.id, data, store.expire)!
+	store.client.set(store.key_prefix + session.id, data, store.max_age)!
 }
 
 fn (mut store RedisStore) delete(mut response_header http.Header, mut session Session) ! {
@@ -136,7 +126,7 @@ fn (mut store RedisStore) load(session_id string) !Session {
 	get_res := store.client.get(store.key_prefix + session_id)!
 	mut loaded_session := json.decode(Session, get_res.val)!
 	if store.refresh_expire {
-		store.client.expire(store.key_prefix + session_id, store.expire)!
+		store.client.expire(store.key_prefix + session_id, store.max_age)!
 	}
 
 	loaded_session.is_new = false

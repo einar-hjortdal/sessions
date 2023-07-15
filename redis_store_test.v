@@ -65,13 +65,20 @@ fn test_save() {
 	mut request := setup_request()
 	mut session := store.new(mut request, 'test_session')
 	store.save(mut request.header, mut session) or { panic(err) }
+	// Verify session cookie
 	// When `RedisStore.CookieOptions.max_age <= 0` 2 `Set-Cookie` headers are set:
 	// The first one makes the existing cookie expire, the second one sets a new cookie.
 	// The default `RedisStore.CookieOptions.max_age` is set to `0`
 	set_cookie_headers := request.header.values(http.CommonHeader.set_cookie)
 	assert set_cookie_headers.len == 2
-	assert set_cookie_headers[0].starts_with('test_session=') == true
-	assert set_cookie_headers[1].starts_with('test_session=') == true
+	assert set_cookie_headers[0].starts_with('test_session') == true
+	assert set_cookie_headers[1].starts_with('test_session') == true
+	// Verify session data
+	get_res := store.client.get('${store.key_prefix}${session.id}') or { panic(err) }
+	println(store.expire)
+	println(session.id)
+	println(get_res)
+
 	/*
 	*
 	* Fifteen-minute store
@@ -89,6 +96,10 @@ fn test_new_existing() {
 	mut request := setup_request()
 	mut session_one := store.new(mut request, 'test_session')
 	store.save(mut request.header, mut session_one) or { panic(err) }
+	// TODO verify data on redis
+	// store.client.get()
+	// assert...
+
 	// Because the default `RedisStore.CookieOptions.max_age` is set to `0`, when `RedisStore.new` is
 	// invoked a new session is created.
 	mut session_two := store.new(mut request, 'test_session')
