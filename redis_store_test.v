@@ -94,6 +94,7 @@ fn test_new_existing() {
 	mut store := setup_fifteen_minute_store() or { panic(err) }
 	mut request := setup_request()
 	mut session_one := store.new(mut request, 'test_session')
+	session_one.values = 'test_value'
 	store.save(mut request.header, mut session_one) or { panic(err) }
 	// `Store.save` sets a `Set-Cookie` header but `Store.new` uses the `Request.cookies` map.
 	set_cookie_header := request.header.get(http.CommonHeader.set_cookie) or {
@@ -106,4 +107,5 @@ fn test_new_existing() {
 	mut session_two := store.new(mut request, 'test_session')
 	assert session_two.is_new == false
 	assert session_one.id == session_two.id
+	assert session_two.values == 'test_value'
 }
