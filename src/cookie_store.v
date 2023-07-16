@@ -5,7 +5,7 @@ import json
 
 // CookieStoreOptions is the struct to provide to new_cookie_store.
 pub struct CookieStoreOptions {
-	cookie_opts CookieOptions
+	CookieOptions
 }
 
 // CookieStore allows to store session data on the client in the form of a cookie.
@@ -13,8 +13,11 @@ pub struct CookieStore {
 	CookieStoreOptions
 }
 
-fn new_cookie_store(opts CookieStoreOptions) CookieStore {
-	return CookieStore{
+fn new_cookie_store(opts CookieStoreOptions) !&CookieStore {
+	if opts.secret == '' {
+		return error('CookieStoreOptions.cookie_opts.secret must be provided')
+	}
+	return &CookieStore{
 		CookieStoreOptions: opts
 	}
 }
@@ -31,7 +34,7 @@ pub fn (mut store CookieStore) get(mut request http.Request, name string) Sessio
 
 pub fn (mut store CookieStore) new(request http.Request, name string) Session {
 	if existing_session := get_cookie(request, name) {
-		if decoded_value := decode_value(existing_session, store.cookie_opts.secret) {
+		if decoded_value := decode_value(existing_session, store.secret) {
 			session := json.decode(Session, decoded_value) or { return new_session(name) }
 			return session
 		} else {
@@ -45,7 +48,7 @@ pub fn (mut store CookieStore) new(request http.Request, name string) Session {
 // save puts the session in a `Set-Cookie` header in the response `Header`.
 pub fn (mut store CookieStore) save(mut response_header http.Header, mut session Session) ! {
 	encoded_session := json.encode(session)
-	cookie := new_cookie(session.name, encoded_session, store.cookie_opts)!
+	cookie := new_cookie(session.name, encoded_session, store.CookieStoreOptions.CookieOptions)!
 	set_cookie(mut response_header, cookie)!
 }
 

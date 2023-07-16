@@ -55,7 +55,7 @@ pub fn new_redis_store(rso RedisStoreOptions, co CookieOptions, mut ro redis.Opt
 *
 */
 
-pub fn (store RedisStore) get(mut request http.Request, name string) Session {
+pub fn (mut store RedisStore) get(mut request http.Request, name string) Session {
 	return Session{}
 }
 

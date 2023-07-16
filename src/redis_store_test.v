@@ -4,6 +4,8 @@ import net.http
 import time
 import coachonko.redis
 
+// These tests require a KeyDB instance running and reachable on localhost:6379
+
 fn setup_request() http.Request {
 	return http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
 }

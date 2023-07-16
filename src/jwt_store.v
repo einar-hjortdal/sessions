@@ -76,7 +76,7 @@ struct JsonWebTokenPayload {
 }
 
 // new_jwt_store creates a JsonWebTokenStore with the given options.
-pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
+pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !&JsonWebTokenStore {
 	if opts.secret == '' {
 		return error('secret must be provided')
 	}
@@ -109,7 +109,7 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 	}
 	// TODO validate and format prefixes?
 
-	return JsonWebTokenStore{
+	return &JsonWebTokenStore{
 		JsonWebTokenStoreOptions: JsonWebTokenStoreOptions{
 			app_name: new_app_name
 			audience: new_audience
