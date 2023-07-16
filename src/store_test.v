@@ -12,6 +12,14 @@ fn test_implement() {
 	}
 	_ := fn () &Store {
 		mut ro := c_redis.Options{}
-		return new_redis_store(RedisStoreOptions{}, CookieOptions{}, mut ro) or { panic(err) }
+		return new_redis_store_cookie(RedisStoreOptions{}, CookieOptions{}, mut ro) or {
+			panic(err)
+		}
+	}
+	_ := fn () &Store {
+		mut ro := c_redis.Options{}
+		return new_redis_jwt_store(RedisStoreOptions{}, JsonWebTokenOptions{}, mut ro) or {
+			panic(err)
+		}
 	}
 }

@@ -10,27 +10,27 @@ fn setup_request() http.Request {
 	return http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
 }
 
-fn setup_default_store() !&RedisStore {
+fn setup_default_cookie_store() !&RedisStoreCookie {
 	rso := RedisStoreOptions{}
 	co := CookieOptions{
 		secret: 'test_secret'
 	}
 	mut ro := redis.Options{}
-	return new_redis_store(rso, co, mut ro)!
+	return new_redis_store_cookie(rso, co, mut ro)!
 }
 
-fn setup_fifteen_minute_store() !&RedisStore {
+fn setup_fifteen_minute_store() !&RedisStoreCookie {
 	rso := RedisStoreOptions{}
 	co := CookieOptions{
 		secret: 'test_secret'
 		max_age: 15 * time.minute
 	}
 	mut ro := redis.Options{}
-	return new_redis_store(rso, co, mut ro)!
+	return new_redis_store_cookie(rso, co, mut ro)!
 }
 
-fn test_new_redis_store() {
-	store := setup_default_store() or { panic(err) }
+fn test_new_redis_store_cookie() {
+	store := setup_default_cookie_store() or { panic(err) }
 	assert store.max_length == 4096
 	assert store.key_prefix == 'session_'
 }
@@ -41,7 +41,7 @@ fn test_new() {
 	* Default store
 	*
 	*/
-	mut store := setup_default_store() or { panic(err) }
+	mut store := setup_default_cookie_store() or { panic(err) }
 	mut request := setup_request()
 	mut session := store.new(request, 'test_session')
 	assert session.name == 'test_session'
@@ -62,7 +62,7 @@ fn test_save() {
 	* Default store
 	*
 	*/
-	mut store := setup_default_store() or { panic(err) }
+	mut store := setup_default_cookie_store() or { panic(err) }
 	mut request := setup_request()
 	mut session := store.new(request, 'test_session')
 	store.save(mut request.header, mut session) or { panic(err) }

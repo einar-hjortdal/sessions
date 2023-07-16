@@ -1,7 +1,11 @@
 # Redis store
 
-Redis store stores session data in a Redis instance. A cookie is given to the client, this cookie contains 
-the session id used to match the client to its session data.
+Redis store stores session data in a Redis instance. To match requests to their session data, there 
+are two options: 
+1. A cookie is given to the client, this cookie contains a session id.
+  This option is best suited to server-rendered web applications.
+2. A JWT is given to the client as a custom header, the `sid` claim contains the session id.
+  This option is best suited for client-rendered web applications.
 
 ## Usage
 
@@ -29,7 +33,7 @@ rso := sessions.RedisStoreOptions{
 }
 
 // Create a new RedisStore
-store := sessions.new_redis_store(rso, co, mut ro)
+store := sessions.new_redis_store_cookie(rso, co, mut ro)
 
 // Use the RedisStore to create or load existing sessions
 mut session := store.new(request, 'demo')
