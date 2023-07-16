@@ -15,6 +15,15 @@ Install with `v install Coachonko.sessions`
 // import the module
 import coachonko.sessions
 
+// Cookie and JWT options have similar API
+// The main difference is which options are fed to the factory function
+
+/*
+*
+* Cookie version
+*
+*/
+
 // Create options structs
 mut ro := redis.Options{
   // Refer to Coachonko/redis documentation
@@ -43,4 +52,22 @@ mut session := store.new(request, 'demo')
 session.values = json.encode(MySessionData, data) // MySessionData is defined by you, the user.
 
 store.save(mut response_header, mut session)
+
+/*
+*
+* JWT version
+*
+*/
+
+mut rso := RedisStoreOptions{}
+mut jwto := JsonWebTokenOptions{
+  // Provide a secret to encrypt the value of the cookies.
+  // It is recommended to use environment variables to store such secrets.
+  secret: os.get_env(COOKIE_SECRET)
+  // For more information, check out the jwt.v file
+}
+mut ro := redis.Options{}
+store := new_redis_store_jwt(mut rso, mut jwto, mut ro)!
+
+// Create (or load) and save sessions as with the cookie version
 ```
