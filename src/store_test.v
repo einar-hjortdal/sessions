@@ -20,6 +20,6 @@ fn test_implement() {
 		mut ro := c_redis.Options{}
 		mut jwto := JsonWebTokenOptions{}
 		mut rso := RedisStoreOptions{}
-		return new_redis_jwt_store(mut rso, mut jwto, mut ro) or { panic(err) }
+		return new_redis_store_jwt(mut rso, mut jwto, mut ro) or { panic(err) }
 	}
 }
