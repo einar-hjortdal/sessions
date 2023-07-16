@@ -207,7 +207,6 @@ fn (mut store RedisStoreJsonWebToken) load_token(request_header http.Header, nam
 	return payload
 }
 
-// TODO DRY with JsonWebTokenStore decode_token, almost same code
 fn (store RedisStoreJsonWebToken) decode_token(token string) !JsonWebTokenRedisPayload {
 	if token.contains('.') && token.count('.') == 2 {
 		split_token := token.split('.')
