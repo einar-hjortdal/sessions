@@ -41,7 +41,7 @@ fn test_new() {
 	*/
 	mut store := setup_default_store() or { panic(err) }
 	mut request := setup_request()
-	mut session := store.new(mut request, 'test_session')
+	mut session := store.new(request, 'test_session')
 	assert session.name == 'test_session'
 	assert session.values == ''
 	assert session.is_new == true
@@ -62,7 +62,7 @@ fn test_save() {
 	*/
 	mut store := setup_default_store() or { panic(err) }
 	mut request := setup_request()
-	mut session := store.new(mut request, 'test_session')
+	mut session := store.new(request, 'test_session')
 	store.save(mut request.header, mut session) or { panic(err) }
 	// The default `CookieOptions.max_age` is set to `0`.
 	// Verify session cookie has no Max-Age attribute.
@@ -80,7 +80,7 @@ fn test_save() {
 	*/
 	store = setup_fifteen_minute_store() or { panic(err) }
 	request = setup_request()
-	session = store.new(mut request, 'test_session')
+	session = store.new(request, 'test_session')
 	store.save(mut request.header, mut session) or { panic(err) }
 	set_cookie_headers = request.header.values(http.CommonHeader.set_cookie)
 	assert set_cookie_headers.len == 1
@@ -93,7 +93,7 @@ fn test_save() {
 fn test_new_existing() {
 	mut store := setup_fifteen_minute_store() or { panic(err) }
 	mut request := setup_request()
-	mut session_one := store.new(mut request, 'test_session')
+	mut session_one := store.new(request, 'test_session')
 	session_one.values = 'test_value'
 	store.save(mut request.header, mut session_one) or { panic(err) }
 	// `Store.save` sets a `Set-Cookie` header but `Store.new` uses the `Request.cookies` map.
@@ -104,7 +104,7 @@ fn test_new_existing() {
 	cookie_value := set_cookie_header.trim_string_left('test_session=').split(';')
 	request.cookies['test_session'] = cookie_value[0]
 
-	mut session_two := store.new(mut request, 'test_session')
+	mut session_two := store.new(request, 'test_session')
 	assert session_two.is_new == false
 	assert session_one.id == session_two.id
 	assert session_two.values == 'test_value'

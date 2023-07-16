@@ -25,7 +25,7 @@ fn new_cookie_store(opts CookieStoreOptions) CookieStore {
 *
 */
 
-pub fn (mut store CookieStore) get(request http.Request, name string) Session {
+pub fn (mut store CookieStore) get(mut request http.Request, name string) Session {
 	return Session{}
 }
 

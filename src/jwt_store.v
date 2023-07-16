@@ -131,7 +131,7 @@ pub fn new_jwt_store(opts JsonWebTokenStoreOptions) !JsonWebTokenStore {
 *
 */
 
-pub fn (mut store JsonWebTokenStore) get(request http.Request, name string) Session {
+pub fn (mut store JsonWebTokenStore) get(mut request http.Request, name string) Session {
 	return Session{}
 }
 

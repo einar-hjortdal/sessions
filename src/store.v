@@ -8,7 +8,7 @@ import net.http
 // save should persist session to the underlying store implementation.
 pub interface Store {
 mut:
-	get(request http.Request, name string) Session
+	get(mut request http.Request, name string) Session
 	new(request http.Request, name string) Session
 	save(mut response_header http.Header, mut session Session) !
 }
