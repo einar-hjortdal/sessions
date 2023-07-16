@@ -40,29 +40,6 @@ mut:
 	valid_until time.Time
 }
 
-struct JsonWebTokenHeader {
-	alg string
-	typ string
-}
-
-// JsonWebTokenPayload contains RFC7519 claims.
-struct JsonWebTokenPayload {
-	// iss is the identifier of the issuer of the token.
-	iss string
-	// sub is the subject of the token.
-	sub string
-	// aud is the identifier of the application that will use the token.
-	aud string
-	// exp is the expiration timestamp of the token.
-	exp i64
-	// nbf is the timestamp from the moment the token is considered valid.
-	nbf i64
-	// iat is the timestamp of when the token was issued.
-	iat i64
-	// jti is the unique id of the token
-	jti string
-}
-
 fn (mut opts JsonWebTokenOptions) init() ! {
 	if opts.secret == '' {
 		return error('secret must be provided')
@@ -92,11 +69,34 @@ fn (mut opts JsonWebTokenOptions) init() ! {
 	// TODO validate and format prefixes?
 }
 
+struct JsonWebTokenHeader {
+	alg string
+	typ string
+}
+
 fn new_header() JsonWebTokenHeader {
 	return JsonWebTokenHeader{
 		alg: 'HS256'
 		typ: 'JWT'
 	}
+}
+
+// JsonWebTokenPayload contains RFC7519 claims.
+struct JsonWebTokenPayload {
+	// iss is the identifier of the issuer of the token.
+	iss string
+	// sub is the subject of the token.
+	sub string
+	// aud is the identifier of the application that will use the token.
+	aud string
+	// exp is the expiration timestamp of the token.
+	exp i64
+	// nbf is the timestamp from the moment the token is considered valid.
+	nbf i64
+	// iat is the timestamp of when the token was issued.
+	iat i64
+	// jti is the unique id of the token
+	jti string
 }
 
 fn (opts JsonWebTokenOptions) new_payload(sub string) JsonWebTokenPayload {

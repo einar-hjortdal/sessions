@@ -86,26 +86,6 @@ fn (mut store JsonWebTokenStore) load_token(request_header http.Header, mut sess
 	return error('Token does not contain a session named ${session.name}')
 }
 
-fn (store JsonWebTokenStore) new_token(session Session) string {
-	header := base64.url_encode(json.encode(new_header()).bytes())
-	payload := base64.url_encode(json.encode(store.new_payload(session)).bytes())
-
-	signature := hmac.new(store.secret.bytes(), '${header}.${payload}'.bytes(), sha256.sum,
-		sha256.block_size).bytestr()
-	encoded_signature := base64.url_encode(signature.bytes())
-
-	return '${header}.${payload}.${encoded_signature}'
-}
-
-fn (store JsonWebTokenStore) new_payload(session Session) JsonWebTokenStorePayload {
-	new_payload := store.JsonWebTokenStoreOptions.JsonWebTokenOptions.new_payload('')
-
-	return JsonWebTokenStorePayload{
-		JsonWebTokenPayload: new_payload
-		session: session
-	}
-}
-
 // decode_token returns a decoded payload if the token signature and payload are both valid.
 fn (store JsonWebTokenStore) decode_token(token string) !JsonWebTokenStorePayload {
 	if token.contains('.') && token.count('.') == 2 {
@@ -124,5 +104,25 @@ fn (store JsonWebTokenStore) decode_token(token string) !JsonWebTokenStorePayloa
 		}
 	} else {
 		return error('Malformed token')
+	}
+}
+
+fn (store JsonWebTokenStore) new_token(session Session) string {
+	header := base64.url_encode(json.encode(new_header()).bytes())
+	payload := base64.url_encode(json.encode(store.new_payload(session)).bytes())
+
+	signature := hmac.new(store.secret.bytes(), '${header}.${payload}'.bytes(), sha256.sum,
+		sha256.block_size).bytestr()
+	encoded_signature := base64.url_encode(signature.bytes())
+
+	return '${header}.${payload}.${encoded_signature}'
+}
+
+fn (store JsonWebTokenStore) new_payload(session Session) JsonWebTokenStorePayload {
+	new_payload := store.JsonWebTokenStoreOptions.JsonWebTokenOptions.new_payload('')
+
+	return JsonWebTokenStorePayload{
+		JsonWebTokenPayload: new_payload
+		session: session
 	}
 }

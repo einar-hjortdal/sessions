@@ -11,22 +11,22 @@ fn setup_request() http.Request {
 }
 
 fn setup_default_cookie_store() !&RedisStoreCookie {
-	rso := RedisStoreOptions{}
+	mut rso := RedisStoreOptions{}
 	co := CookieOptions{
 		secret: 'test_secret'
 	}
 	mut ro := redis.Options{}
-	return new_redis_store_cookie(rso, co, mut ro)!
+	return new_redis_store_cookie(mut rso, co, mut ro)!
 }
 
 fn setup_fifteen_minute_store() !&RedisStoreCookie {
-	rso := RedisStoreOptions{}
+	mut rso := RedisStoreOptions{}
 	co := CookieOptions{
 		secret: 'test_secret'
 		max_age: 15 * time.minute
 	}
 	mut ro := redis.Options{}
-	return new_redis_store_cookie(rso, co, mut ro)!
+	return new_redis_store_cookie(mut rso, co, mut ro)!
 }
 
 fn test_new_redis_store_cookie() {

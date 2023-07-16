@@ -7,6 +7,7 @@ import crypto.hmac
 import crypto.sha256
 import encoding.base64
 import coachonko.redis
+import time
 
 // RedisStoreOptions is the struct to provide to new_redis_store_cookie.
 pub struct RedisStoreOptions {
@@ -121,9 +122,11 @@ fn (mut store RedisStoreCookie) set(session Session) ! {
 	store.client.set(store.key_prefix + session.id, data, store.max_age)!
 }
 
-// load returns true if there is session data in Redis.
 fn (mut store RedisStoreCookie) load(session_id string) !Session {
 	get_res := store.client.get(store.key_prefix + session_id)!
+	if get_res.err() == 'nil' {
+		return error('nil')
+	}
 	mut loaded_session := json.decode(Session, get_res.val())!
 	if store.refresh_expire {
 		store.client.expire(store.key_prefix + session_id, store.max_age)!
@@ -176,7 +179,7 @@ pub fn (mut store RedisStoreJsonWebToken) get(mut request http.Request, name str
 
 pub fn (mut store RedisStoreJsonWebToken) new(request http.Request, name string) Session {
 	if payload := store.load_token(request.header, name) {
-		session := store.load_session(payload.sid) or { return new_session(name) }
+		session := store.load(payload.sid) or { return new_session(name) }
 		return session
 	} else {
 		return new_session(name)
@@ -185,7 +188,9 @@ pub fn (mut store RedisStoreJsonWebToken) new(request http.Request, name string)
 
 // save stores a `Session` in Redis and gives the client a signed JWT containing the session ID.
 pub fn (mut store RedisStoreJsonWebToken) save(mut response_header http.Header, mut session Session) ! {
-	return
+	new_jwt := store.new_token(session.id)
+	response_header.add_custom('${store.prefix}${session.name}', new_jwt)!
+	store.set(session)!
 }
 
 /*
@@ -202,7 +207,7 @@ fn (mut store RedisStoreJsonWebToken) load_token(request_header http.Header, nam
 	return payload
 }
 
-// TODO DRY with JsonWebTokenStore decode_token
+// TODO DRY with JsonWebTokenStore decode_token, almost same code
 fn (store RedisStoreJsonWebToken) decode_token(token string) !JsonWebTokenRedisPayload {
 	if token.contains('.') && token.count('.') == 2 {
 		split_token := token.split('.')
@@ -223,11 +228,47 @@ fn (store RedisStoreJsonWebToken) decode_token(token string) !JsonWebTokenRedisP
 	}
 }
 
-fn (mut store RedisStoreJsonWebToken) load_session(key string) !Session {
-	get_res := store.client.get(key)!
+fn (store RedisStoreJsonWebToken) new_token(session_id string) string {
+	header := base64.url_encode(json.encode(new_header()).bytes())
+	payload := base64.url_encode(json.encode(store.new_payload(session_id)).bytes())
+
+	signature := hmac.new(store.secret.bytes(), '${header}.${payload}'.bytes(), sha256.sum,
+		sha256.block_size).bytestr()
+	encoded_signature := base64.url_encode(signature.bytes())
+
+	return '${header}.${payload}.${encoded_signature}'
+}
+
+fn (store RedisStoreJsonWebToken) new_payload(session_id string) JsonWebTokenRedisPayload {
+	new_payload := store.JsonWebTokenOptions.new_payload('')
+
+	return JsonWebTokenRedisPayload{
+		JsonWebTokenPayload: new_payload
+		sid: session_id
+	}
+}
+
+fn (mut store RedisStoreJsonWebToken) load(session_id string) !Session {
+	get_res := store.client.get(store.key_prefix + session_id)!
 	if get_res.err() == 'nil' {
 		return error('nil')
-	} else {
-		return json.decode(Session, get_res.val())
 	}
+	mut loaded_session := json.decode(Session, get_res.val())!
+	if store.refresh_expire {
+		expire := time.now() - store.JsonWebTokenOptions.get_exp()
+		store.client.expire(store.key_prefix + session_id, expire)!
+	}
+
+	loaded_session.is_new = false
+	return loaded_session
+}
+
+fn (mut store RedisStoreJsonWebToken) set(session Session) ! {
+	data := json.encode(session)
+	if store.max_length != 0 && data.len > store.max_length {
+		return error('The value to store is too big')
+	}
+
+	expire := time.now() - store.JsonWebTokenOptions.get_exp()
+	store.client.set(store.key_prefix + session.id, data, expire)!
 }
