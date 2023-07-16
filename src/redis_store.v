@@ -91,7 +91,7 @@ pub fn (mut store RedisStoreCookie) new(request http.Request, name string) Sessi
 // to delete the cookie.
 pub fn (mut store RedisStoreCookie) save(mut response_header http.Header, mut session Session) ! {
 	if store.max_age <= 0 {
-		store.client.del(store.key_prefix + session.id)!
+		store.client.del('${store.key_prefix}${session.id}')!
 		cookie := new_cookie(session.name, '', store.CookieOptions)!
 		set_cookie(mut response_header, cookie)!
 	} else {
