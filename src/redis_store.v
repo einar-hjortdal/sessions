@@ -14,7 +14,7 @@ pub struct RedisStoreOptions {
 mut:
 	// max_length limits the size of the value of the session stored in Redis. Defaults to 4096 bytes.
 	max_length int
-	// key_prefix when not provided defaults to 'session_'
+	// key_prefix is the prefix used used in keys when storing data on a Redis server. Defaults to 'session_'.
 	key_prefix string
 	// refresh_expire when true resets the `EXPIRE` time when a session is loaded with `new`. Defaults
 	// to false.
@@ -119,17 +119,17 @@ fn (mut store RedisStoreCookie) set(session Session) ! {
 		return error('The value to store is too big')
 	}
 
-	store.client.set(store.key_prefix + session.id, data, store.max_age)!
+	store.client.set('${store.key_prefix}${session.id}', data, store.max_age)!
 }
 
 fn (mut store RedisStoreCookie) load(session_id string) !Session {
-	get_res := store.client.get(store.key_prefix + session_id)!
+	get_res := store.client.get('${store.key_prefix}${session_id}')!
 	if get_res.err() == 'nil' {
 		return error('nil')
 	}
 	mut loaded_session := json.decode(Session, get_res.val())!
 	if store.refresh_expire {
-		store.client.expire(store.key_prefix + session_id, store.max_age)!
+		store.client.expire('${store.key_prefix}${session_id}', store.max_age)!
 	}
 
 	loaded_session.is_new = false
@@ -249,14 +249,14 @@ fn (store RedisStoreJsonWebToken) new_payload(session_id string) JsonWebTokenRed
 }
 
 fn (mut store RedisStoreJsonWebToken) load(session_id string) !Session {
-	get_res := store.client.get(store.key_prefix + session_id)!
+	get_res := store.client.get('${store.key_prefix}${session_id}')!
 	if get_res.err() == 'nil' {
 		return error('nil')
 	}
 	mut loaded_session := json.decode(Session, get_res.val())!
 	if store.refresh_expire {
 		expire := time.now() - store.JsonWebTokenOptions.get_exp()
-		store.client.expire(store.key_prefix + session_id, expire)!
+		store.client.expire('${store.key_prefix}${session_id}', expire)!
 	}
 
 	loaded_session.is_new = false
@@ -270,5 +270,5 @@ fn (mut store RedisStoreJsonWebToken) set(session Session) ! {
 	}
 
 	expire := time.now() - store.JsonWebTokenOptions.get_exp()
-	store.client.set(store.key_prefix + session.id, data, expire)!
+	store.client.set('${store.key_prefix}${session.id}', data, expire)!
 }
