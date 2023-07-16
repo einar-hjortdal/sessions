@@ -28,12 +28,12 @@ co := sessions.CookieOptions{
   max_age: 30 * time.minute
   // For more information, check out the cookie.v file
 }
-rso := sessions.RedisStoreOptions{
+mut rso := sessions.RedisStoreOptions{
   // For information, check out the redis_store.v file
 }
 
 // Create a new RedisStore
-store := sessions.new_redis_store_cookie(rso, co, mut ro)
+store := sessions.new_redis_store_cookie(mut rso, co, mut ro)
 
 // Use the RedisStore to create or load existing sessions
 mut session := store.new(request, 'demo')

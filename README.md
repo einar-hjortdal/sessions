@@ -16,3 +16,6 @@ Look at the open issues and the [TODO.md](TODO.md) file to learn what kind of he
 
 - It is important to implement race condition mitigation strategies within the route handler, such as 
   *optimistic locking with version number*.
+- Both `JsonWebTokenStore` and `RedisStoreJsonWebToken` use custom headers, this allows to store multiple 
+  sessions on one response. However, this introduces the need to handle CORS preflight requests. This 
+  can be done both within the application itself or by configuring your favorite reverse proxy.

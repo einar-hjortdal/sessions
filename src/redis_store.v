@@ -151,7 +151,7 @@ mut:
 	client redis.Client
 }
 
-pub fn new_redis_jwt_store(mut rso RedisStoreOptions, mut jwto JsonWebTokenOptions, mut ro redis.Options) !&RedisStoreJsonWebToken {
+pub fn new_redis_store_jwt(mut rso RedisStoreOptions, mut jwto JsonWebTokenOptions, mut ro redis.Options) !&RedisStoreJsonWebToken {
 	rso.init()
 	jwto.init()!
 
@@ -179,10 +179,10 @@ pub fn (mut store RedisStoreJsonWebToken) get(mut request http.Request, name str
 
 pub fn (mut store RedisStoreJsonWebToken) new(request http.Request, name string) Session {
 	if payload := store.load_token(request.header, name) {
-		session := store.load(payload.sid) or { return new_session(name) }
+		session := store.load(payload.sid) or { return new_redis_session(name) }
 		return session
 	} else {
-		return new_session(name)
+		return new_redis_session(name)
 	}
 }
 
