@@ -1,9 +1,10 @@
 module sessions
 
 pub struct Session {
+pub:
 	// name is the property utilized by users of the sessions library.
 	name string
-mut:
+pub mut:
 	id string
 	// values contains the user-data for the session.
 	// In order to store complex data as a string, data can be encoded, for example as JSON.
