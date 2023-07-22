@@ -102,6 +102,14 @@ fn test_store_cookie_save() {
 	get_res = store.client.get('${store.key_prefix}${session.id}') or { panic(err) }
 	assert get_res.val().contains('${session.id}')
 	assert get_res.val().contains('Some data')
+
+	// Test session.to_prune
+	session.to_prune = true
+	store.save(mut request.header, mut session) or { panic(err) }
+	set_cookie_headers = request.header.values(http.CommonHeader.set_cookie)
+	get_res = store.client.get('${store.key_prefix}${session.id}') or { panic(err) }
+	println(set_cookie_headers)
+	println(get_res)
 }
 
 fn test_store_cookie_new_existing() {

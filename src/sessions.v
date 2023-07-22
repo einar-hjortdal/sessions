@@ -8,9 +8,10 @@ pub mut:
 	id string
 	// values contains the user-data for the session.
 	// In order to store complex data as a string, data can be encoded, for example as JSON.
-	values  string
-	is_new  bool
-	flashes []Flash
+	values   string
+	is_new   bool
+	to_prune bool
+	flashes  []Flash
 }
 
 // new_session is called by session stores to create a new session instance.

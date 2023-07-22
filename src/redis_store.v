@@ -86,13 +86,14 @@ pub fn (mut store RedisStoreCookie) new(request http.Request, name string) Sessi
 }
 
 // save stores a `Session` in Redis and gives the client a signed cookie containing the session ID.
-// It can also be used to delete a session from Redis and from the client: when `RedisStoreCookie.max_age`
-// is set to `0` or less, then this method deletes the session data from Redis and instructs the client
-// to delete the cookie.
+// It can also be used to delete a session from Redis and from the client: when `Session.to_prune` is
+// is set to `true`, then this method deletes the session data from Redis and instructs the client to
+// delete the cookie.
 pub fn (mut store RedisStoreCookie) save(mut response_header http.Header, mut session Session) ! {
-	if store.max_age <= 0 {
+	if store.CookieOptions.max_age <= 0 || session.to_prune {
 		store.client.del('${store.key_prefix}${session.id}')!
-		cookie := new_cookie(session.name, '', store.CookieOptions)!
+		new_cookie_opts := cookie_opts_del(store.CookieOptions)
+		cookie := new_cookie(session.name, '', new_cookie_opts)!
 		set_cookie(mut response_header, cookie)!
 	} else {
 		store.set(session)!
@@ -106,6 +107,17 @@ pub fn (mut store RedisStoreCookie) save(mut response_header http.Header, mut se
 * Internal
 *
 */
+
+fn cookie_opts_del(cookie_opts CookieOptions) CookieOptions {
+	return CookieOptions{
+		domain: cookie_opts.domain
+		http_only: cookie_opts.http_only
+		path: cookie_opts.path
+		secret: cookie_opts.secret
+		secure: cookie_opts.secure
+		max_age: 0
+	}
+}
 
 fn new_redis_session(name string) Session {
 	mut session := new_session(name)
