@@ -110,7 +110,7 @@ fn (opts JsonWebTokenOptions) new_payload(sub string) JsonWebTokenPayload {
 		exp: new_exp.unix_time()
 		nbf: new_nbf.unix_time()
 		iat: time.now().unix_time()
-		jti: 'token_${rand.uuid_v4()}'
+		jti: rand.uuid_v4()
 	}
 }
 
