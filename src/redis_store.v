@@ -199,10 +199,16 @@ pub fn (mut store RedisStoreJsonWebToken) new(request http.Request, name string)
 }
 
 // save stores a `Session` in Redis and gives the client a signed JWT containing the session ID.
+// It can also be used to delete a session from Redis: when `Session.to_prune` is set to `true`, then
+// this method deletes the session data from Redis.
 pub fn (mut store RedisStoreJsonWebToken) save(mut response_header http.Header, mut session Session) ! {
-	new_jwt := store.new_token(session.id)
-	response_header.add_custom('${store.prefix}${session.name}', new_jwt)!
-	store.set(session)!
+	if session.to_prune {
+		store.client.del('${store.key_prefix}${session.id}')!
+	} else {
+		new_jwt := store.new_token(session.id)
+		response_header.add_custom('${store.prefix}${session.name}', new_jwt)!
+		store.set(session)!
+	}
 }
 
 /*

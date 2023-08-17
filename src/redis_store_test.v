@@ -4,8 +4,8 @@ import net.http
 import time
 import coachonko.redis
 
-// These tests require a KeyDB instance running on localhost:6379
-// podman run --detach --name=keydb --tz=local --publish=6379:6379 --rm eqalpha/keydb
+// These tests require a KeyDB instance running on localhost:29400
+// podman run --detach --name=keydb --tz=local --publish=29400:6379 --rm eqalpha/keydb --requirepass=aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8
 
 fn setup_request() http.Request {
 	return http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
@@ -22,7 +22,10 @@ fn setup_default_cookie_store() !&RedisStoreCookie {
 	co := CookieOptions{
 		secret: 'test_secret'
 	}
-	mut ro := redis.Options{}
+	mut ro := redis.Options{
+		address: 'localhost:29400'
+		password: 'aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8'
+	}
 	return new_redis_store_cookie(mut rso, co, mut ro)!
 }
 
@@ -32,7 +35,10 @@ fn setup_fifteen_minute_store() !&RedisStoreCookie {
 		secret: 'test_secret'
 		max_age: 15 * time.minute
 	}
-	mut ro := redis.Options{}
+	mut ro := redis.Options{
+		address: 'localhost:29400'
+		password: 'aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8'
+	}
 	return new_redis_store_cookie(mut rso, co, mut ro)!
 }
 
@@ -108,8 +114,9 @@ fn test_store_cookie_save() {
 	store.save(mut request.header, mut session) or { panic(err) }
 	set_cookie_headers = request.header.values(http.CommonHeader.set_cookie)
 	get_res = store.client.get('${store.key_prefix}${session.id}') or { panic(err) }
-	println(set_cookie_headers)
-	println(get_res)
+	assert set_cookie_headers.len == 2
+	assert !set_cookie_headers[1].contains('expires')
+	assert get_res.err() == 'nil'
 }
 
 fn test_store_cookie_new_existing() {
@@ -143,7 +150,10 @@ fn setup_default_jwt_store() !&RedisStoreJsonWebToken {
 	mut jwto := JsonWebTokenOptions{
 		secret: 'test_secret'
 	}
-	mut ro := redis.Options{}
+	mut ro := redis.Options{
+		address: 'localhost:29400'
+		password: 'aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8'
+	}
 	return new_redis_store_jwt(mut rso, mut jwto, mut ro)!
 }
 
@@ -184,6 +194,12 @@ fn test_store_jwt_save() {
 	assert get_res.err() != 'nil'
 	assert get_res.val().contains('Test-Session')
 	assert get_res.val().contains('Some data')
+
+	// Test session.to_prune
+	session.to_prune = true
+	store.save(mut request.header, mut session) or { panic(err) }
+	get_res = store.client.get('${store.key_prefix}${session.id}') or { panic(err) }
+	assert get_res.err() == 'nil'
 }
 
 fn test_store_jwt_new_existing() {
