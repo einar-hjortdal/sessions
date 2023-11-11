@@ -32,7 +32,11 @@ fn test_cookie_store() {
 	assert decoded_session.id == session.id
 	assert decoded_session.values == 'test_value'
 
-	request.cookies['test_session'] = cookie_value
+	cookie := http.Cookie{
+		name: 'test_session'
+		value: cookie_value
+	}
+	request.add_cookie(cookie)
 	reloaded_session := store.new(request, 'test_session')
 	assert reloaded_session.id == session.id
 	assert reloaded_session.values == 'test_value'

@@ -70,7 +70,7 @@ pub fn (mut store RedisStoreCookie) get(mut request http.Request, name string) S
 }
 
 pub fn (mut store RedisStoreCookie) new(request http.Request, name string) Session {
-	if request_cookie := get_cookie(request, name) {
+	if request_cookie := get_cookie_value(request, name) {
 		if session_id := decode_value(request_cookie, store.secret) {
 			if session := store.load(session_id) {
 				return session

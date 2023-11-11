@@ -71,9 +71,9 @@ fn decode_value(value string, secret string) !string {
 	return error('Signature not valid')
 }
 
-fn get_cookie(request http.Request, name string) !string {
-	if value := request.cookies[name] {
-		return value
+fn get_cookie_value(request http.Request, name string) !string {
+	if cookie := request.cookie(name) {
+		return cookie.value
 	}
 	return error('The request does not contain any cookie named ${name}')
 }

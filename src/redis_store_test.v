@@ -125,13 +125,17 @@ fn test_store_cookie_new_existing() {
 	mut session_one := store.new(request, 'test_session')
 	session_one.values = 'test_value'
 	store.save(mut request.header, mut session_one) or { panic(err) }
-	// `Store.save` sets a `Set-Cookie` header but `Store.new` uses the `Request.cookies` map.
+	// `Store.save` sets a `Set-Cookie` header but `Store.new` uses the `Request.cookie` method.
 	set_cookie_header := request.header.get(http.CommonHeader.set_cookie) or {
 		assert false // header missing
 		return
 	}
 	cookie_value := set_cookie_header.trim_string_left('test_session=').split(';')
-	request.cookies['test_session'] = cookie_value[0]
+	cookie := http.Cookie{
+		name: 'test_session'
+		value: cookie_value[0]
+	}
+	request.add_cookie(cookie)
 
 	mut session_two := store.new(request, 'test_session')
 	assert session_two.is_new == false

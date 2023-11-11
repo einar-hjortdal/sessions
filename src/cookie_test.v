@@ -56,7 +56,7 @@ fn test_set_cookie() {
 
 fn test_get_missing_cookie() {
 	request := setup_request()
-	get_cookie(request, 'test_name') or {
+	get_cookie_value(request, 'test_name') or {
 		assert true
 		return
 	}
@@ -69,8 +69,8 @@ fn test_get_set_cookie() {
 		assert false
 		return
 	}
-	request.cookies['test_name'] = test_cookie.value
-	cookie := get_cookie(request, 'test_name') or {
+	request.add_cookie(test_cookie)
+	cookie := get_cookie_value(request, 'test_name') or {
 		assert false
 		return
 	}
