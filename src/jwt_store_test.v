@@ -127,10 +127,7 @@ fn test_new_save() {
 		return
 	}
 	// Attempt to read the data from the header to a new session
-	println('TEST START')
-	println(session)
 	session = store.new(request, 'Test-Session')
-	println('TEST END')
 	assert session.id == id
 	assert session.values == '453636'
 }

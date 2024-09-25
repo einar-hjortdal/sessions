@@ -123,10 +123,10 @@ fn (opts JsonWebTokenOptions) new_token(sub string) string {
 	return '${header}.${payload}.${encoded_signature}'
 }
 
-// TODO needs fix
 fn (opts JsonWebTokenOptions) get_exp() time.Time {
+	zero := time.Time{}.unix()
 	if opts.valid_end == 0 {
-		if opts.valid_until.unix() != 0 {
+		if opts.valid_until.unix() != zero {
 			return opts.valid_until
 		} else {
 			return time.now().add(12 * time.hour)
