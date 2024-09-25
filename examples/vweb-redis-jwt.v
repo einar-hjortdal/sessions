@@ -1,13 +1,11 @@
-import vweb
+import vweb // TODO vweb is deprecated, move to veb
 import net.http
 import json
-import coachonko.sessions
-import coachonko.redis
+import einar_hjortdal.sessions
+import einar_hjortdal.redict
 
-const (
-	constant_admin_session_name = 'Admin'
-	constant_header_key         = 'Coachonko-${constant_admin_session_name}'
-)
+const constant_admin_session_name = 'Admin'
+const constant_header_key = 'Einar-${constant_admin_session_name}'
 
 /*
 *
@@ -17,7 +15,7 @@ const (
 pub struct App {
 	vweb.Context
 mut:
-	sessions_struct Sessions [vweb_global]
+	sessions_struct Sessions @[vweb_global]
 }
 
 pub fn (mut app App) before_request() {
@@ -43,7 +41,7 @@ struct AdminAuthPostRequest {
 	password string
 }
 
-['/admin/auth'; post]
+@['/admin/auth'; post]
 pub fn (mut app App) admin_auth_post() vweb.Result {
 	body := json.decode(AdminAuthPostRequest, app.req.data) or {
 		app.set_status(422, 'Invalid request')
@@ -77,20 +75,20 @@ pub mut:
 }
 
 pub fn new_sessions_store() !&sessions.Store {
-	// https://github.com/Coachonko/sessions/blob/meester/src/jwt.v
+	// https://github.com/einar_hjortdal/sessions/blob/pending/src/jwt.v
 	mut jwto := sessions.JsonWebTokenOptions{
 		secret: 'some-dummy-secret'
 	}
 
-	// https://github.com/Coachonko/sessions/blob/meester/src/redis_store.v
-	mut rso := sessions.RedisStoreOptions{}
+	// https://github.com/einar_hjortdal/sessions/blob/pending/src/redict_store.v
+	mut rso := sessions.RedictStoreOptions{}
 
-	// https://github.com/Coachonko/redis/blob/meester/src/options.v
-	mut ro := redis.Options{
+	// https://github.com/einar_hjortdal/redict/blob/pending/src/options.v
+	mut ro := redict.Options{
 		address: 'localhost:29400'
 	}
 
-	return sessions.new_redis_store_jwt(mut rso, mut jwto, mut ro)!
+	return sessions.new_redict_store_jwt(mut rso, mut jwto, mut ro)!
 }
 
 fn main() {
@@ -98,7 +96,7 @@ fn main() {
 
 	new_sessions_struct := &Sessions{
 		admin_session_name: constant_admin_session_name
-		store: new_store
+		store:              new_store
 	}
 
 	mut app := &App{

@@ -17,7 +17,7 @@ pub mut:
 // new_session is called by session stores to create a new session instance.
 fn new_session(name string) Session {
 	return Session{
-		name: name
+		name:   name
 		is_new: true
 	}
 }
@@ -42,8 +42,8 @@ mut:
 // new_flash adds a flash to the session.
 pub fn (mut session Session) add_flash(kind string, message string) {
 	new_flash := Flash{
-		kind: kind
-		message: message
+		kind:     kind
+		message:  message
 		consumed: false
 	}
 	session.flashes << new_flash

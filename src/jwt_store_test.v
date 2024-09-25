@@ -24,10 +24,10 @@ fn test_new_jwt_store() {
 	}
 	if store := new_jwt_store(mut opts_defaults) {
 		assert store.secret == 'test'
-		assert store.issuer == 'Coachonko'
+		assert store.issuer == 'Einar Hjortdal'
 		assert store.only_from.format_rfc3339() == '2023-07-01T00:00:00.000Z'
-		assert store.app_name == 'Coachonko'
-		assert store.audience == 'Coachonko'
+		assert store.app_name == 'Einar Hjortdal'
+		assert store.audience == 'Einar Hjortdal'
 		assert store.valid_start == 0
 	} else {
 		assert false // failed to set defaults
@@ -36,13 +36,13 @@ fn test_new_jwt_store() {
 	// should respect user-given values
 	//
 	mut opts_given := JsonWebTokenStoreOptions{
-		secret: 'test_secret'
-		issuer: 'test_issuer'
-		only_from: time.parse_rfc3339('2023-07-01T12:00:00.000Z') or { time.now() }
-		app_name: 'test_app'
-		audience: 'test_audience'
+		secret:      'test_secret'
+		issuer:      'test_issuer'
+		only_from:   time.parse_rfc3339('2023-07-01T12:00:00.000Z') or { time.now() }
+		app_name:    'test_app'
+		audience:    'test_audience'
 		valid_start: 2 * 24 * time.hour
-		valid_end: 5 * 24 * time.hour
+		valid_end:   5 * 24 * time.hour
 	}
 	if store := new_jwt_store(mut opts_given) {
 		assert store.secret == 'test_secret'
@@ -73,7 +73,7 @@ fn test_new_session() {
 	//
 	// Should handle existing and invalid header
 	//
-	request.header.add_custom('Coachonko-Test-Session', 'test')!
+	request.header.add_custom('Einar-Hjortdal-Test-Session', 'test')!
 	if mut store := new_jwt_store(mut opts_defaults) {
 		mut session := store.new(request, 'Test-Session')
 		assert session.name == 'Test-Session'
@@ -97,7 +97,7 @@ fn test_save_session() {
 			assert false // failed to save session
 			return
 		}
-		session_header := header.get_custom('Coachonko-Test-Session') or {
+		session_header := header.get_custom('Einar-Hjortdal-Test-Session') or {
 			assert false // header missing
 			return
 		}
@@ -121,12 +121,17 @@ fn test_new_save() {
 	// Create new session, add some data to it and save it to the header
 	mut session := store.new(request, 'Test-Session')
 	session.values = '453636'
+	id := session.id
 	store.save(mut request.header, mut session) or {
 		assert false // failed to save session
 		return
 	}
 	// Attempt to read the data from the header to a new session
+	println('TEST START')
+	println(session)
 	session = store.new(request, 'Test-Session')
+	println('TEST END')
+	assert session.id == id
 	assert session.values == '453636'
 }
 
@@ -134,7 +139,7 @@ fn test_new_save() {
 fn test_new_save_nfb() {
 	// nbf
 	mut opts := JsonWebTokenStoreOptions{
-		secret: 'test'
+		secret:     'test'
 		valid_from: time.now().add(12 * time.hour)
 	}
 	mut request := setup_request()
@@ -155,7 +160,7 @@ fn test_new_save_nfb() {
 // test_new_save_exp checks if valid_until works
 fn test_new_save_exp() {
 	mut opts := JsonWebTokenStoreOptions{
-		secret: 'test'
+		secret:      'test'
 		valid_until: time.now().add(-12 * time.hour)
 	}
 	mut request := setup_request()
@@ -176,7 +181,7 @@ fn test_new_save_exp() {
 // test_new_save_aud checks if audience works
 fn test_new_save_aud() {
 	mut opts := JsonWebTokenStoreOptions{
-		secret: 'test'
+		secret:   'test'
 		audience: 'nobody'
 	}
 	mut request := setup_request()
@@ -197,7 +202,7 @@ fn test_new_save_aud() {
 // test_new_save_iat checks whether only_from works
 fn test_new_save_iat() {
 	mut opts := JsonWebTokenStoreOptions{
-		secret: 'test'
+		secret:    'test'
 		only_from: time.now().add(12 * time.hour)
 	}
 	mut request := setup_request()

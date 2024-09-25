@@ -1,27 +1,27 @@
 module sessions
 
-import json
-import net.http
-import rand
 import crypto.hmac
 import crypto.sha256
+import einar_hjortdal.luuid
+import einar_hjortdal.redict
 import encoding.base64
-import coachonko.redis
+import json
+import net.http
 import time
 
-// RedisStoreOptions is the struct to provide to new_redis_store_cookie.
-pub struct RedisStoreOptions {
+// RedictStoreOptions is the struct to provide to new_redict_store_cookie.
+pub struct RedictStoreOptions {
 mut:
-	// max_length limits the size of the value of the session stored in Redis. Defaults to 4096 bytes.
+	// max_length limits the size of the value of the session stored in Redict. Defaults to 4096 bytes.
 	max_length int
-	// key_prefix is the prefix used used in keys when storing data on a Redis server. Defaults to 'session_'.
+	// key_prefix is the prefix used used in keys when storing data on a Redict server. Defaults to 'session_'.
 	key_prefix string
 	// refresh_expire when true resets the `EXPIRE` time when a session is loaded with `new`. Defaults
 	// to false.
 	refresh_expire bool
 }
 
-fn (mut rso RedisStoreOptions) init() {
+fn (mut rso RedictStoreOptions) init() {
 	if rso.max_length == 0 {
 		rso.max_length = 4096
 	}
@@ -39,23 +39,23 @@ fn (mut rso RedisStoreOptions) init() {
 *
 */
 
-// RedisStore contains a `redis.Client` which maintains a pool of connections to a Redis server.
-pub struct RedisStoreCookie {
+// RedictStore contains a `redict.Client` which maintains a pool of connections to a Redict server.
+pub struct RedictStoreCookie {
 	CookieOptions
-	RedisStoreOptions
+	RedictStoreOptions
 mut:
-	client redis.Client
+	client redict.Client
 }
 
-// new_redis_store_cookie returns a new `RedisStore` utilizing the provided `RedisStoreOptions`, `CookieOptions`
-// and `redis.Options`.
-pub fn new_redis_store_cookie(mut rso RedisStoreOptions, co CookieOptions, mut ro redis.Options) !&RedisStoreCookie {
+// new_redict_store_cookie returns a new `RedictStore` utilizing the provided `RedictStoreOptions`, `CookieOptions`
+// and `redict.Options`.
+pub fn new_redict_store_cookie(mut rso RedictStoreOptions, co CookieOptions, mut ro redict.Options) !&RedictStoreCookie {
 	rso.init()
 
-	return &RedisStoreCookie{
-		CookieOptions: co
-		RedisStoreOptions: rso
-		client: redis.new_client(mut ro)
+	return &RedictStoreCookie{
+		CookieOptions:      co
+		RedictStoreOptions: rso
+		client:             redict.new_client(mut ro)
 	}
 }
 
@@ -65,31 +65,31 @@ pub fn new_redis_store_cookie(mut rso RedisStoreOptions, co CookieOptions, mut r
 *
 */
 
-pub fn (mut store RedisStoreCookie) get(mut request http.Request, name string) Session {
+pub fn (mut store RedictStoreCookie) get(mut request http.Request, name string) Session {
 	return Session{}
 }
 
-pub fn (mut store RedisStoreCookie) new(request http.Request, name string) Session {
+pub fn (mut store RedictStoreCookie) new(request http.Request, name string) Session {
 	if request_cookie := get_cookie_value(request, name) {
 		if session_id := decode_value(request_cookie, store.secret) {
 			if session := store.load(session_id) {
 				return session
 			} else {
-				return new_redis_session(name)
+				return new_redict_session(name)
 			}
 		} else {
-			return new_redis_session(name)
+			return new_redict_session(name)
 		}
 	} else {
-		return new_redis_session(name)
+		return new_redict_session(name)
 	}
 }
 
-// save stores a `Session` in Redis and gives the client a signed cookie containing the session ID.
-// It can also be used to delete a session from Redis and from the client: when `Session.to_prune` is
-// is set to `true`, then this method deletes the session data from Redis and instructs the client to
+// save stores a `Session` in Redict and gives the client a signed cookie containing the session ID.
+// It can also be used to delete a session from Redict and from the client: when `Session.to_prune` is
+// is set to `true`, then this method deletes the session data from Redict and instructs the client to
 // delete the cookie.
-pub fn (mut store RedisStoreCookie) save(mut response_header http.Header, mut session Session) ! {
+pub fn (mut store RedictStoreCookie) save(mut response_header http.Header, mut session Session) ! {
 	if store.CookieOptions.max_age <= 0 || session.to_prune {
 		store.client.del('${store.key_prefix}${session.id}')!
 		new_cookie_opts := cookie_opts_del(store.CookieOptions)
@@ -110,22 +110,22 @@ pub fn (mut store RedisStoreCookie) save(mut response_header http.Header, mut se
 
 fn cookie_opts_del(cookie_opts CookieOptions) CookieOptions {
 	return CookieOptions{
-		domain: cookie_opts.domain
+		domain:    cookie_opts.domain
 		http_only: cookie_opts.http_only
-		path: cookie_opts.path
-		secret: cookie_opts.secret
-		secure: cookie_opts.secure
-		max_age: 0
+		path:      cookie_opts.path
+		secret:    cookie_opts.secret
+		secure:    cookie_opts.secure
+		max_age:   0
 	}
 }
 
-fn new_redis_session(name string) Session {
+fn new_redict_session(name string) Session {
 	mut session := new_session(name)
-	session.id = rand.uuid_v4()
+	session.id = luuid.v2()
 	return session
 }
 
-fn (mut store RedisStoreCookie) set(session Session) ! {
+fn (mut store RedictStoreCookie) set(session Session) ! {
 	data := json.encode(session)
 	if store.max_length != 0 && data.len > store.max_length {
 		return error('The value to store is too big')
@@ -134,7 +134,7 @@ fn (mut store RedisStoreCookie) set(session Session) ! {
 	store.client.set('${store.key_prefix}${session.id}', data, store.max_age)!
 }
 
-fn (mut store RedisStoreCookie) load(session_id string) !Session {
+fn (mut store RedictStoreCookie) load(session_id string) !Session {
 	get_res := store.client.get('${store.key_prefix}${session_id}')!
 	if get_res.err() == 'nil' {
 		return error('nil')
@@ -156,25 +156,25 @@ fn (mut store RedisStoreCookie) load(session_id string) !Session {
 *
 */
 
-pub struct RedisStoreJsonWebToken {
+pub struct RedictStoreJsonWebToken {
 	JsonWebTokenOptions
-	RedisStoreOptions
+	RedictStoreOptions
 mut:
-	client redis.Client
+	client redict.Client
 }
 
-pub fn new_redis_store_jwt(mut rso RedisStoreOptions, mut jwto JsonWebTokenOptions, mut ro redis.Options) !&RedisStoreJsonWebToken {
+pub fn new_redict_store_jwt(mut rso RedictStoreOptions, mut jwto JsonWebTokenOptions, mut ro redict.Options) !&RedictStoreJsonWebToken {
 	rso.init()
 	jwto.init()!
 
-	return &RedisStoreJsonWebToken{
+	return &RedictStoreJsonWebToken{
 		JsonWebTokenOptions: jwto
-		RedisStoreOptions: rso
-		client: redis.new_client(mut ro)
+		RedictStoreOptions:  rso
+		client:              redict.new_client(mut ro)
 	}
 }
 
-struct JsonWebTokenRedisPayload {
+struct JsonWebTokenRedictPayload {
 	JsonWebTokenPayload
 	sid string
 }
@@ -185,23 +185,23 @@ struct JsonWebTokenRedisPayload {
 *
 */
 
-pub fn (mut store RedisStoreJsonWebToken) get(mut request http.Request, name string) Session {
+pub fn (mut store RedictStoreJsonWebToken) get(mut request http.Request, name string) Session {
 	return Session{}
 }
 
-pub fn (mut store RedisStoreJsonWebToken) new(request http.Request, name string) Session {
+pub fn (mut store RedictStoreJsonWebToken) new(request http.Request, name string) Session {
 	if payload := store.load_token(request.header, name) {
-		session := store.load(payload.sid) or { return new_redis_session(name) }
+		session := store.load(payload.sid) or { return new_redict_session(name) }
 		return session
 	} else {
-		return new_redis_session(name)
+		return new_redict_session(name)
 	}
 }
 
-// save stores a `Session` in Redis and gives the client a signed JWT containing the session ID.
-// It can also be used to delete a session from Redis: when `Session.to_prune` is set to `true`, then
-// this method deletes the session data from Redis.
-pub fn (mut store RedisStoreJsonWebToken) save(mut response_header http.Header, mut session Session) ! {
+// save stores a `Session` in Redict and gives the client a signed JWT containing the session ID.
+// It can also be used to delete a session from Redict: when `Session.to_prune` is set to `true`, then
+// this method deletes the session data from Redict.
+pub fn (mut store RedictStoreJsonWebToken) save(mut response_header http.Header, mut session Session) ! {
 	if session.to_prune {
 		store.client.del('${store.key_prefix}${session.id}')!
 	} else {
@@ -217,7 +217,7 @@ pub fn (mut store RedisStoreJsonWebToken) save(mut response_header http.Header, 
 *
 */
 
-fn (mut store RedisStoreJsonWebToken) load_token(request_header http.Header, name string) !JsonWebTokenRedisPayload {
+fn (mut store RedictStoreJsonWebToken) load_token(request_header http.Header, name string) !JsonWebTokenRedictPayload {
 	session_header := request_header.get_custom('${store.prefix}${name}') or {
 		return error('Header is missing')
 	}
@@ -225,7 +225,7 @@ fn (mut store RedisStoreJsonWebToken) load_token(request_header http.Header, nam
 	return payload
 }
 
-fn (store RedisStoreJsonWebToken) decode_token(token string) !JsonWebTokenRedisPayload {
+fn (store RedictStoreJsonWebToken) decode_token(token string) !JsonWebTokenRedictPayload {
 	if token.contains('.') && token.count('.') == 2 {
 		split_token := token.split('.')
 		signature_mirror := hmac.new(store.secret.bytes(), '${split_token[0]}.${split_token[1]}'.bytes(),
@@ -234,7 +234,7 @@ fn (store RedisStoreJsonWebToken) decode_token(token string) !JsonWebTokenRedisP
 
 		if hmac.equal(decoded_signature, signature_mirror) {
 			json_payload := base64.url_decode(split_token[1]).bytestr()
-			payload := json.decode(JsonWebTokenRedisPayload, json_payload)!
+			payload := json.decode(JsonWebTokenRedictPayload, json_payload)!
 			store.validate_claims(payload.JsonWebTokenPayload)!
 			return payload
 		} else {
@@ -245,7 +245,7 @@ fn (store RedisStoreJsonWebToken) decode_token(token string) !JsonWebTokenRedisP
 	}
 }
 
-fn (store RedisStoreJsonWebToken) new_token(session_id string) string {
+fn (store RedictStoreJsonWebToken) new_token(session_id string) string {
 	header := base64.url_encode(json.encode(new_header()).bytes())
 	payload := base64.url_encode(json.encode(store.new_payload(session_id)).bytes())
 
@@ -256,16 +256,16 @@ fn (store RedisStoreJsonWebToken) new_token(session_id string) string {
 	return '${header}.${payload}.${encoded_signature}'
 }
 
-fn (store RedisStoreJsonWebToken) new_payload(session_id string) JsonWebTokenRedisPayload {
+fn (store RedictStoreJsonWebToken) new_payload(session_id string) JsonWebTokenRedictPayload {
 	new_payload := store.JsonWebTokenOptions.new_payload('')
 
-	return JsonWebTokenRedisPayload{
+	return JsonWebTokenRedictPayload{
 		JsonWebTokenPayload: new_payload
-		sid: session_id
+		sid:                 session_id
 	}
 }
 
-fn (mut store RedisStoreJsonWebToken) load(session_id string) !Session {
+fn (mut store RedictStoreJsonWebToken) load(session_id string) !Session {
 	get_res := store.client.get('${store.key_prefix}${session_id}')!
 	if get_res.err() == 'nil' {
 		return error('nil')
@@ -280,7 +280,7 @@ fn (mut store RedisStoreJsonWebToken) load(session_id string) !Session {
 	return loaded_session
 }
 
-fn (mut store RedisStoreJsonWebToken) set(session Session) ! {
+fn (mut store RedictStoreJsonWebToken) set(session Session) ! {
 	data := json.encode(session)
 	if store.max_length != 0 && data.len > store.max_length {
 		return error('The value to store is too big')

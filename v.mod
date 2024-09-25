@@ -1,11 +1,14 @@
 Module{
 	name: 'sessions'
-	author: 'Coachonko'
-	version: '1.14.0'
-	dependencies: ['https://github.com/Coachonko/redis']
-	repo_url: 'https://github.com/Coachonko/sessions'
+	description: 'session management for V web applications'
+	author: 'einar-hjortdal'
+	version: '3.1.0'
+	repo_url: 'https://github.com/einar-hjortdal/sessions'
+	dependencies: [
+		'einar-hjortdal.redict',
+		'einar-hjortdal.luuid'
+	]
 	vcs: 'git'
-	tags: ['vweb', 'redis', 'keydb', 'sessions']
-	description: 'session management for web applications'
+	tags: ['veb', 'redict', 'jwt', 'cookie', 'sessions']
 	license: 'NCSA'
 }

@@ -5,11 +5,11 @@ the server.
 
 ## Usage
 
-Install with `v install Coachonko.sessions`
+Install with `v install einar-hjortdal.sessions`
 
 ```V
 // import the module
-import coachonko.sessions
+import einar_hjortdal.sessions
 
 // Create the options struct
 // For more information about this struct, please look at the source.

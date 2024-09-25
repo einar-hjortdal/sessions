@@ -1,17 +1,17 @@
 module sessions
 
-import time
-import rand
-import encoding.base64
 import crypto.hmac
 import crypto.sha256
+import einar_hjortdal.luuid
+import encoding.base64
 import json
+import time
 
 pub struct JsonWebTokenOptions {
 mut:
 	// app_name is the name of the application that issued the token.
 	// This is usually a domain name and it is compared with the RFC7519 `aud` claim.
-	// Defaults to Coachonko.
+	// Defaults to 'Einar Hjortdal'
 	app_name string
 	// audience is the name of the app or the group of apps that are meant to consume the token.
 	// Sets RFC7519 `aud` claim.
@@ -19,12 +19,12 @@ mut:
 	audience string
 	// issuer is the identifier of the issuer of the token. Sets RFC7519 `iss` claim.
 	// This field is useufl to identify which backend or service issued the token.
-	// Defaults to Coachonko.
+	// Defaults to 'Einar Hjortdal'.
 	issuer string
 	// only_from is a timestimp before which no token is considered valid. Defaults to July 1st 2023.
 	only_from time.Time
 	// prefix is a string used to construct the name of the custom HTTP header where the JWT is stored.
-	// Defaults to 'Coachonko-'.
+	// Defaults to 'Einar-Hjortdal-'.
 	prefix string
 	// secret is a string used to sign the token.
 	secret string
@@ -46,11 +46,11 @@ fn (mut opts JsonWebTokenOptions) init() ! {
 	}
 
 	if opts.issuer == '' {
-		opts.issuer = 'Coachonko'
+		opts.issuer = 'Einar Hjortdal'
 	}
 
 	if opts.app_name == '' {
-		opts.app_name = 'Coachonko'
+		opts.app_name = 'Einar Hjortdal'
 	}
 
 	if opts.audience == '' {
@@ -64,9 +64,8 @@ fn (mut opts JsonWebTokenOptions) init() ! {
 	}
 
 	if opts.prefix == '' {
-		opts.prefix = 'Coachonko-'
+		opts.prefix = 'Einar-Hjortdal-'
 	}
-	// TODO validate and format prefixes?
 }
 
 struct JsonWebTokenHeader {
@@ -102,15 +101,14 @@ struct JsonWebTokenPayload {
 fn (opts JsonWebTokenOptions) new_payload(sub string) JsonWebTokenPayload {
 	mut new_exp := opts.get_exp()
 	mut new_nbf := opts.get_nbf()
-
 	return JsonWebTokenPayload{
 		aud: opts.audience
 		iss: opts.issuer
 		sub: sub
-		exp: new_exp.unix_time()
-		nbf: new_nbf.unix_time()
-		iat: time.now().unix_time()
-		jti: rand.uuid_v4()
+		exp: new_exp.unix()
+		nbf: new_nbf.unix()
+		iat: time.now().unix()
+		jti: luuid.v2()
 	}
 }
 
@@ -125,9 +123,10 @@ fn (opts JsonWebTokenOptions) new_token(sub string) string {
 	return '${header}.${payload}.${encoded_signature}'
 }
 
+// TODO needs fix
 fn (opts JsonWebTokenOptions) get_exp() time.Time {
 	if opts.valid_end == 0 {
-		if opts.valid_until.unix != 0 {
+		if opts.valid_until.unix() != 0 {
 			return opts.valid_until
 		} else {
 			return time.now().add(12 * time.hour)
@@ -139,7 +138,7 @@ fn (opts JsonWebTokenOptions) get_exp() time.Time {
 
 fn (opts JsonWebTokenOptions) get_nbf() time.Time {
 	if opts.valid_start == 0 {
-		if opts.valid_from.unix != 0 {
+		if opts.valid_from.unix() != 0 {
 			return opts.valid_from
 		} else {
 			return time.now()
@@ -155,7 +154,7 @@ fn (opts JsonWebTokenOptions) get_nbf() time.Time {
 // - the application is not meant to consume this token (aud)
 // - the token was issued after the given cutoff time (iat)
 fn (opts JsonWebTokenOptions) validate_claims(payload JsonWebTokenPayload) ! {
-	now := time.now().unix_time()
+	now := time.now().unix()
 	// Ensure the token is already valid and has not yet expired
 	nbf := payload.nbf
 	if nbf > now && nbf != 0 {
@@ -173,7 +172,7 @@ fn (opts JsonWebTokenOptions) validate_claims(payload JsonWebTokenPayload) ! {
 	}
 	// Ensure the token was issued after the given date
 	iat := payload.iat
-	if iat > 0 && iat < opts.only_from.unix_time() {
+	if iat > 0 && iat < opts.only_from.unix() {
 		return error('Token was issued before ${opts.only_from.format_rfc3339()}')
 	}
 	// TODO add filter to exclude specific issuers

@@ -2,10 +2,7 @@ module sessions
 
 import net.http
 import time
-import coachonko.redis
-
-// These tests require a KeyDB instance running on localhost:29400
-// podman run --detach --name=keydb --tz=local --publish=29400:6379 --rm eqalpha/keydb --requirepass=aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8
+import einar_hjortdal.redict
 
 fn setup_request() http.Request {
 	return http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
@@ -17,32 +14,32 @@ fn setup_request() http.Request {
 *
 */
 
-fn setup_default_cookie_store() !&RedisStoreCookie {
-	mut rso := RedisStoreOptions{}
+fn setup_default_cookie_store() !&RedictStoreCookie {
+	mut rso := RedictStoreOptions{}
 	co := CookieOptions{
 		secret: 'test_secret'
 	}
-	mut ro := redis.Options{
-		address: 'localhost:29400'
+	mut ro := redict.Options{
+		address:  'localhost:6379'
 		password: 'aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8'
 	}
-	return new_redis_store_cookie(mut rso, co, mut ro)!
+	return new_redict_store_cookie(mut rso, co, mut ro)!
 }
 
-fn setup_fifteen_minute_store() !&RedisStoreCookie {
-	mut rso := RedisStoreOptions{}
+fn setup_fifteen_minute_store() !&RedictStoreCookie {
+	mut rso := RedictStoreOptions{}
 	co := CookieOptions{
-		secret: 'test_secret'
+		secret:  'test_secret'
 		max_age: 15 * time.minute
 	}
-	mut ro := redis.Options{
-		address: 'localhost:29400'
+	mut ro := redict.Options{
+		address:  'localhost:6379'
 		password: 'aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8'
 	}
-	return new_redis_store_cookie(mut rso, co, mut ro)!
+	return new_redict_store_cookie(mut rso, co, mut ro)!
 }
 
-fn test_new_redis_store_cookie() {
+fn test_new_redict_store_cookie() {
 	store := setup_default_cookie_store() or { panic(err) }
 	assert store.max_length == 4096
 	assert store.key_prefix == 'session_'
@@ -132,7 +129,7 @@ fn test_store_cookie_new_existing() {
 	}
 	cookie_value := set_cookie_header.trim_string_left('test_session=').split(';')
 	cookie := http.Cookie{
-		name: 'test_session'
+		name:  'test_session'
 		value: cookie_value[0]
 	}
 	request.add_cookie(cookie)
@@ -149,19 +146,19 @@ fn test_store_cookie_new_existing() {
 *
 */
 
-fn setup_default_jwt_store() !&RedisStoreJsonWebToken {
-	mut rso := RedisStoreOptions{}
+fn setup_default_jwt_store() !&RedictStoreJsonWebToken {
+	mut rso := RedictStoreOptions{}
 	mut jwto := JsonWebTokenOptions{
 		secret: 'test_secret'
 	}
-	mut ro := redis.Options{
-		address: 'localhost:29400'
+	mut ro := redict.Options{
+		address:  'localhost:6379'
 		password: 'aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8'
 	}
-	return new_redis_store_jwt(mut rso, mut jwto, mut ro)!
+	return new_redict_store_jwt(mut rso, mut jwto, mut ro)!
 }
 
-fn test_new_redis_store_jwt() {
+fn test_new_redict_store_jwt() {
 	store := setup_default_jwt_store() or { panic(err) }
 	assert store.max_length == 4096
 	assert store.key_prefix == 'session_'
@@ -189,11 +186,11 @@ fn test_store_jwt_save() {
 	store.save(mut request.header, mut session) or { panic(err) }
 
 	// Verify header is set
-	mut custom_headers := request.header.custom_values('Coachonko-Test-Session')
+	mut custom_headers := request.header.custom_values('Einar-Test-Session')
 	assert custom_headers.len == 1
 	assert custom_headers[0].count('.') == 2
 
-	// Verify data is put on Redis
+	// Verify data is put on Redict
 	mut get_res := store.client.get('${store.key_prefix}${session.id}') or { panic(err) }
 	assert get_res.err() != 'nil'
 	assert get_res.val().contains('Test-Session')

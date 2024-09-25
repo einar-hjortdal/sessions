@@ -2,10 +2,10 @@ module sessions
 
 import crypto.hmac
 import crypto.sha256
+import einar_hjortdal.luuid
 import encoding.base64
-import net.http
-import rand
 import json
+import net.http
 
 // JsonWebTokenStoreOptions is the struct to provide to new_jwt_store.
 pub struct JsonWebTokenStoreOptions {
@@ -48,7 +48,7 @@ pub fn (mut store JsonWebTokenStore) get(mut request http.Request, name string) 
 pub fn (mut store JsonWebTokenStore) new(request http.Request, name string) Session {
 	mut session := new_session(name)
 	store.load_token(request.header, mut session) or {
-		session.id = 'session_${rand.uuid_v4()}'
+		session.id = 'session_${luuid.v2()}'
 		return session
 	}
 	return session
@@ -123,6 +123,6 @@ fn (store JsonWebTokenStore) new_payload(session Session) JsonWebTokenStorePaylo
 
 	return JsonWebTokenStorePayload{
 		JsonWebTokenPayload: new_payload
-		session: session
+		session:             session
 	}
 }
