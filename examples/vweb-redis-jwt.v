@@ -75,15 +75,15 @@ pub mut:
 }
 
 pub fn new_sessions_store() !&sessions.Store {
-	// https://github.com/einar_hjortdal/sessions/blob/pending/src/jwt.v
+	// https://github.com/einar-hjortdal/sessions/blob/pending/src/jwt.v
 	mut jwto := sessions.JsonWebTokenOptions{
 		secret: 'some-dummy-secret'
 	}
 
-	// https://github.com/einar_hjortdal/sessions/blob/pending/src/redict_store.v
+	// https://github.com/einar-hjortdal/sessions/blob/pending/src/redict_store.v
 	mut rso := sessions.RedictStoreOptions{}
 
-	// https://github.com/einar_hjortdal/redict/blob/pending/src/options.v
+	// https://github.com/einar-hjortdal/redict/blob/pending/src/options.v
 	mut ro := redict.Options{
 		address: 'localhost:29400'
 	}
