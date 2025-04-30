@@ -38,4 +38,4 @@ Please follow these standards
 - Use `CHAR` for strings with expected exact lengths.
 - Use `VARCHAR` for strings with expected maximum lengths, for strings with default values, and for 
   strings that are in an `INDEX` or `UNIQUE` constraint.
-- Use `TEXT` for unknown-length strings.
+- Use `BLOB SUB_TYPE TEXT` for unknown-length strings.

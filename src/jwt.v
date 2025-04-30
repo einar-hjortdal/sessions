@@ -8,7 +8,7 @@ import json
 import time
 
 pub struct JsonWebTokenOptions {
-mut:
+pub mut:
 	// app_name is the name of the application that issued the token.
 	// This is usually a domain name and it is compared with the RFC7519 `aud` claim.
 	// Defaults to 'Einar Hjortdal'
