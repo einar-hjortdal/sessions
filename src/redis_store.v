@@ -136,16 +136,24 @@ fn (mut store RedictStoreCookie) set(session Session) ! {
 
 fn (mut store RedictStoreCookie) load(session_id string) !Session {
 	get_res := store.client.get('${store.key_prefix}${session_id}')!
-	if get_res.err() == 'nil' {
-		return error('nil')
-	}
-	mut loaded_session := json.decode(Session, get_res.val())!
-	if store.refresh_expire {
-		store.client.expire('${store.key_prefix}${session_id}', store.max_age)!
-	}
+	res := get_res.val()
+	match res {
+		redict.Nil {
+			return error('nil')
+		}
+		string {
+			mut loaded_session := json.decode(Session, res)!
+			if store.refresh_expire {
+				store.client.expire('${store.key_prefix}${session_id}', store.max_age)!
+			}
 
-	loaded_session.is_new = false
-	return loaded_session
+			loaded_session.is_new = false
+			return loaded_session
+		}
+		else {
+			return error('Unexpected type returned from redict')
+		}
+	}
 }
 
 /*
@@ -267,17 +275,25 @@ fn (store RedictStoreJsonWebToken) new_payload(session_id string) JsonWebTokenRe
 
 fn (mut store RedictStoreJsonWebToken) load(session_id string) !Session {
 	get_res := store.client.get('${store.key_prefix}${session_id}')!
-	if get_res.err() == 'nil' {
-		return error('nil')
-	}
-	mut loaded_session := json.decode(Session, get_res.val())!
-	if store.refresh_expire {
-		expire := time.now() - store.JsonWebTokenOptions.get_exp()
-		store.client.expire('${store.key_prefix}${session_id}', expire)!
-	}
+	res := get_res.val()
+	match res {
+		redict.Nil {
+			return error('nil')
+		}
+		string {
+			mut loaded_session := json.decode(Session, res)!
+			if store.refresh_expire {
+				expire := time.now() - store.JsonWebTokenOptions.get_exp()
+				store.client.expire('${store.key_prefix}${session_id}', expire)!
+			}
 
-	loaded_session.is_new = false
-	return loaded_session
+			loaded_session.is_new = false
+			return loaded_session
+		}
+		else {
+			return error('Unexpected type returned from redict')
+		}
+	}
 }
 
 fn (mut store RedictStoreJsonWebToken) set(session Session) ! {
