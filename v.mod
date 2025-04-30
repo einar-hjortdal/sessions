@@ -2,7 +2,7 @@ Module{
 	name: 'sessions'
 	description: 'session management for V web applications'
 	author: 'einar-hjortdal'
-	version: '3.1.0'
+	version: '3.1.1'
 	repo_url: 'https://github.com/einar-hjortdal/sessions'
 	dependencies: [
 		'einar-hjortdal.redict',
