@@ -22,7 +22,13 @@ pub struct JsonWebTokenStore {
 // Note: the `sub` claim is not used by this store.
 // session is the stored Session.
 struct JsonWebTokenStorePayload {
-	JsonWebTokenPayload
+	iss     string
+	sub     string
+	aud     string
+	exp     i64
+	nbf     i64
+	iat     i64
+	jti     string
 	session Session
 }
 
@@ -97,7 +103,16 @@ fn (store JsonWebTokenStore) decode_token(token string) !JsonWebTokenStorePayloa
 		if hmac.equal(decoded_signature, signature_mirror) {
 			json_payload := base64.url_decode(split_token[1]).bytestr()
 			payload := json.decode(JsonWebTokenStorePayload, json_payload)!
-			store.validate_claims(payload.JsonWebTokenPayload)!
+			claims := JsonWebTokenPayload{
+				iss: payload.iss
+				sub: payload.sub
+				aud: payload.aud
+				exp: payload.exp
+				nbf: payload.nbf
+				iat: payload.iat
+				jti: payload.jti
+			}
+			store.validate_claims(claims)!
 			return payload
 		} else {
 			return error('Token signature not valid')
@@ -122,7 +137,13 @@ fn (store JsonWebTokenStore) new_payload(session Session) JsonWebTokenStorePaylo
 	new_payload := store.JsonWebTokenStoreOptions.JsonWebTokenOptions.new_payload('')
 
 	return JsonWebTokenStorePayload{
-		JsonWebTokenPayload: new_payload
-		session:             session
+		iss:     new_payload.iss
+		sub:     new_payload.sub
+		aud:     new_payload.aud
+		exp:     new_payload.exp
+		nbf:     new_payload.nbf
+		iat:     new_payload.iat
+		jti:     new_payload.jti
+		session: session
 	}
 }
