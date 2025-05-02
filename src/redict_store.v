@@ -142,7 +142,7 @@ fn (mut store RedictStoreCookie) load(session_id string) !Session {
 			return error('nil')
 		}
 		string {
-			mut loaded_session := json.decode(Session, res)!
+			mut loaded_session := json.decode(Session, *res)! // https://github.com/vlang/v/issues/24054
 			if store.refresh_expire {
 				store.client.expire('${store.key_prefix}${session_id}', store.max_age)!
 			}
@@ -281,7 +281,7 @@ fn (mut store RedictStoreJsonWebToken) load(session_id string) !Session {
 			return error('nil')
 		}
 		string {
-			mut loaded_session := json.decode(Session, res)!
+			mut loaded_session := json.decode(Session, *res)! // https://github.com/vlang/v/issues/24054
 			if store.refresh_expire {
 				expire := time.now() - store.JsonWebTokenOptions.get_exp()
 				store.client.expire('${store.key_prefix}${session_id}', expire)!
