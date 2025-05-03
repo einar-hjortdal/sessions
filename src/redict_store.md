@@ -61,8 +61,6 @@ store.save(mut response_header, mut session)
 
 mut rso := RedictStoreOptions{}
 mut jwto := JsonWebTokenOptions{
-  // Provide a secret to encrypt the value of the cookies.
-  // It is recommended to use environment variables to store such secrets.
   secret: os.get_env(COOKIE_SECRET)
   // For more information, check out the jwt.v file
 }
