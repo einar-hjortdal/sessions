@@ -42,7 +42,7 @@ pub mut:
 
 fn (mut opts JsonWebTokenOptions) init() ! {
 	if opts.secret == '' {
-		return error('secret must be provided')
+		return error(format_error_message('secret must be provided'))
 	}
 
 	if opts.issuer == '' {
@@ -59,7 +59,7 @@ fn (mut opts JsonWebTokenOptions) init() ! {
 
 	if opts.only_from.format_rfc3339() == '0000-00-00T00:00:00.000Z' {
 		opts.only_from = time.parse_rfc3339('2023-07-01T00:00:00.000Z') or {
-			return error('Failed to set default only_from value')
+			return error(format_error_message('Failed to set default only_from value'))
 		}
 	}
 
@@ -158,22 +158,22 @@ fn (opts JsonWebTokenOptions) validate_claims(payload JsonWebTokenPayload) ! {
 	// Ensure the token is already valid and has not yet expired
 	nbf := payload.nbf
 	if nbf > now && nbf != 0 {
-		return error('Token not valid yet')
+		return error(format_error_message('Token not valid yet'))
 	}
 	// Ensure the token is not expired
 	exp := payload.exp
 	if exp < now && exp != 0 {
-		return error('Token has expired')
+		return error(format_error_message('Token has expired'))
 	}
 	// Ensure the app_name is in the audience
 	aud := payload.aud
 	if aud != opts.app_name && aud != '' {
-		return error('Token not intended to be consumed by this app')
+		return error(format_error_message('Token not intended to be consumed by this app'))
 	}
 	// Ensure the token was issued after the given date
 	iat := payload.iat
 	if iat > 0 && iat < opts.only_from.unix() {
-		return error('Token was issued before ${opts.only_from.format_rfc3339()}')
+		return error(format_error_message('Token was issued before ${opts.only_from.format_rfc3339()}'))
 	}
 	// TODO add filter to exclude specific issuers
 	// TODO add filter to only allow specific issuers

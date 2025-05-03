@@ -33,7 +33,7 @@ fn (mut app App) load_session_middleware(mut ctx Context) bool {
 
 fn (mut app App) set_session_middleware(mut ctx Context) bool {
 	app.session_store.save(mut ctx.res.header, mut ctx.session) or {
-		ctx.json(new_peony_error(0, 'failed to save session'))
+		ctx.text('failed to save session')
 		return false
 	}
 	return true

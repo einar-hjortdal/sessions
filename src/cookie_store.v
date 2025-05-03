@@ -15,7 +15,7 @@ pub struct CookieStore {
 
 fn new_cookie_store(opts CookieStoreOptions) !&CookieStore {
 	if opts.secret == '' {
-		return error('CookieStoreOptions.cookie_opts.secret must be provided')
+		return error(format_error_message('CookieStoreOptions.cookie_opts.secret must be provided'))
 	}
 	return &CookieStore{
 		CookieStoreOptions: opts

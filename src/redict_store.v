@@ -128,7 +128,7 @@ fn new_redict_session(name string) Session {
 fn (mut store RedictStoreCookie) set(session Session) ! {
 	data := json.encode(session)
 	if store.max_length != 0 && data.len > store.max_length {
-		return error('The value to store is too big')
+		return error(format_error_message('The value to store is too big'))
 	}
 
 	store.client.set('${store.key_prefix}${session.id}', data, store.max_age)!
@@ -139,7 +139,7 @@ fn (mut store RedictStoreCookie) load(session_id string) !Session {
 	res := get_res.val()
 	match res {
 		redict.Nil {
-			return error('nil')
+			return error(format_error_message('nil'))
 		}
 		string {
 			mut loaded_session := json.decode(Session, *res)! // https://github.com/vlang/v/issues/24054
@@ -151,7 +151,7 @@ fn (mut store RedictStoreCookie) load(session_id string) !Session {
 			return loaded_session
 		}
 		else {
-			return error('Unexpected type returned from redict')
+			return error(format_error_message('Unexpected type returned from redict'))
 		}
 	}
 }
@@ -227,7 +227,7 @@ pub fn (mut store RedictStoreJsonWebToken) save(mut response_header http.Header,
 
 fn (mut store RedictStoreJsonWebToken) load_token(request_header http.Header, name string) !JsonWebTokenRedictPayload {
 	session_header := request_header.get_custom('${store.prefix}${name}') or {
-		return error('Header is missing')
+		return error(format_error_message('Header is missing'))
 	}
 	payload := store.decode_token(session_header)!
 	return payload
@@ -246,10 +246,10 @@ fn (store RedictStoreJsonWebToken) decode_token(token string) !JsonWebTokenRedic
 			store.validate_claims(payload.JsonWebTokenPayload)!
 			return payload
 		} else {
-			return error('Token signature not valid')
+			return error(format_error_message('Token signature not valid'))
 		}
 	} else {
-		return error('Malformed token')
+		return error(format_error_message('Malformed token'))
 	}
 }
 
@@ -278,7 +278,7 @@ fn (mut store RedictStoreJsonWebToken) load(session_id string) !Session {
 	res := get_res.val()
 	match res {
 		redict.Nil {
-			return error('nil')
+			return error(format_error_message('nil'))
 		}
 		string {
 			mut loaded_session := json.decode(Session, *res)! // https://github.com/vlang/v/issues/24054
@@ -291,7 +291,7 @@ fn (mut store RedictStoreJsonWebToken) load(session_id string) !Session {
 			return loaded_session
 		}
 		else {
-			return error('Unexpected type returned from redict')
+			return error(format_error_message('Unexpected type returned from redict'))
 		}
 	}
 }
@@ -299,7 +299,7 @@ fn (mut store RedictStoreJsonWebToken) load(session_id string) !Session {
 fn (mut store RedictStoreJsonWebToken) set(session Session) ! {
 	data := json.encode(session)
 	if store.max_length != 0 && data.len > store.max_length {
-		return error('The value to store is too big')
+		return error(format_error_message('The value to store is too big'))
 	}
 
 	expire := time.now() - store.JsonWebTokenOptions.get_exp()

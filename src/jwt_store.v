@@ -80,7 +80,7 @@ pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut s
 // token.
 fn (mut store JsonWebTokenStore) load_token(request_header http.Header, mut session Session) ! {
 	session_header := request_header.get_custom('${store.prefix}${session.name}') or {
-		return error('Header is missing')
+		return error(format_error_message('Header is missing'))
 	}
 	data := store.decode_token(session_header)!
 	if data.session.name == session.name {
@@ -89,7 +89,7 @@ fn (mut store JsonWebTokenStore) load_token(request_header http.Header, mut sess
 		session.is_new = false
 		return
 	}
-	return error('Token does not contain a session named ${session.name}')
+	return error(format_error_message('Token does not contain a session named ${session.name}'))
 }
 
 // decode_token returns a decoded payload if the token signature and payload are both valid.
@@ -115,10 +115,10 @@ fn (store JsonWebTokenStore) decode_token(token string) !JsonWebTokenStorePayloa
 			store.validate_claims(claims)!
 			return payload
 		} else {
-			return error('Token signature not valid')
+			return error(format_error_message('Token signature not valid'))
 		}
 	} else {
-		return error('Malformed token')
+		return error(format_error_message('Malformed token'))
 	}
 }
 

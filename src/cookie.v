@@ -51,7 +51,7 @@ fn new_cookie(name string, value string, cookie_opts CookieOptions) !http.Cookie
 
 fn new_signature(encoded_session_id string, secret string) !string {
 	if secret == '' {
-		return error('The secret cannot be an empty string')
+		return format_error_message(('The secret cannot be an empty string'))
 	}
 	return hmac.new(secret.bytes(), encoded_session_id.bytes(), sha256.sum, sha256.block_size).bytestr()
 }
@@ -68,20 +68,20 @@ fn decode_value(value string, secret string) !string {
 	if hmac.equal(decoded_signature.bytes(), signature_mirror.bytes()) {
 		return base64.url_decode(value_split[0]).bytestr()
 	}
-	return error('Signature not valid')
+	return error(format_error_message('Signature not valid'))
 }
 
 fn get_cookie_value(request http.Request, name string) !string {
 	if cookie := request.cookie(name) {
 		return cookie.value
 	}
-	return error('The request does not contain any cookie named ${name}')
+	return error(format_error_message('The request does not contain any cookie named ${name}'))
 }
 
 fn set_cookie(mut response_header http.Header, cookie http.Cookie) ! {
 	cookie_raw := cookie.str()
 	if cookie_raw == '' {
-		return error('Invalid cookie name')
+		return error(format_error_message('Invalid cookie name'))
 	}
 	response_header.add(http.CommonHeader.set_cookie, cookie_raw)
 }
