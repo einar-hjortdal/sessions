@@ -65,6 +65,10 @@ pub fn (mut store JsonWebTokenStore) new(request http.Request, name string) Sess
 // Please remember to use HTTP-header friendly strings for both `prefix` and `Session.name`, otherwise
 // `Store.save` will return an error.
 pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut session Session) ! {
+	if session.to_prune {
+		response_header.delete_custom('${store.prefix}${session.name}')
+		return
+	}
 	new_jwt := store.new_token(session)
 	response_header.add_custom('${store.prefix}${session.name}', new_jwt)!
 }
