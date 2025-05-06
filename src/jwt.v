@@ -2,10 +2,10 @@ module sessions
 
 import crypto.hmac
 import crypto.sha256
-import einar_hjortdal.luuid
 import encoding.base64
 import json
 import time
+import einar_hjortdal.luuid
 
 pub struct JsonWebTokenOptions {
 pub mut:

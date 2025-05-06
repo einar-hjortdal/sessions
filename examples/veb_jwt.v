@@ -2,6 +2,12 @@ module main
 
 import einar_hjortdal.sessions
 import os
+import json
+
+struct SessionValues {
+	id    string
+	flags map[string]string
+}
 
 @[heap]
 pub struct App {
@@ -13,7 +19,8 @@ mut:
 pub struct Context {
 	veb.Context
 mut:
-	session sessions.Session
+	session        sessions.Session
+	session_values SessionValues
 }
 
 fn (mut app App) load_session_middleware(mut ctx Context) bool {
@@ -22,9 +29,18 @@ fn (mut app App) load_session_middleware(mut ctx Context) bool {
 		return true
 	}
 
+	// loads session data
 	ctx.session = app.session_store.new(ctx.req, os.getenv('SESSION_NAME'))
 	if ctx.session.is_new {
+		ctx.res.set_status(http.Status.unauthorized)
 		ctx.text('Unauthorized')
+		return false
+	}
+
+	// users-specific session data
+	ctx.session_values = json.decode(SessionValues, ctx.session.values) or {
+		ctx.res.set_status(http.Status.internal_server_error)
+		ctx.text('Failed to decode SessionValues')
 		return false
 	}
 
@@ -32,10 +48,15 @@ fn (mut app App) load_session_middleware(mut ctx Context) bool {
 }
 
 fn (mut app App) set_session_middleware(mut ctx Context) bool {
+	// encode user-specific session data
+	ctx.session.values = json.encode(ctx.session_values)
+
+	// save session
 	app.session_store.save(mut ctx.res.header, mut ctx.session) or {
 		ctx.text('failed to save session')
 		return false
 	}
+
 	return true
 }
 
