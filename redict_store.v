@@ -11,7 +11,7 @@ import time
 
 // RedictStoreOptions is the struct to provide to new_redict_store_cookie.
 pub struct RedictStoreOptions {
-mut:
+pub mut:
 	// max_length limits the size of the value of the session stored in Redict. Defaults to 4096 bytes.
 	max_length int
 	// key_prefix is the prefix used used in keys when storing data on a Redict server. Defaults to 'session_'.

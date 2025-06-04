@@ -65,7 +65,7 @@ mut jwto := JsonWebTokenOptions{
   // For more information, check out the jwt.v file
 }
 mut ro := redict.Options{}
-store := new_redict_store_jwt(mut rso, mut jwto, mut ro)!
+store := new_redict_store_jwt(mut rso, mut jwto, ro)!
 
 // Create (or load) and save sessions as with the cookie version
 ```
