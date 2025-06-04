@@ -44,18 +44,21 @@ pub struct RedictStoreCookie {
 	CookieOptions
 	RedictStoreOptions
 mut:
-	client redict.Client
+	client          redict.Client
+	luuid_generator &luuid.Generator
 }
 
 // new_redict_store_cookie returns a new `RedictStore` utilizing the provided `RedictStoreOptions`, `CookieOptions`
 // and `redict.Options`.
-pub fn new_redict_store_cookie(mut rso RedictStoreOptions, co CookieOptions, mut ro redict.Options) !&RedictStoreCookie {
+pub fn new_redict_store_cookie(mut rso RedictStoreOptions, co CookieOptions, ro redict.Options) !&RedictStoreCookie {
 	rso.init()
+	mut c := redict.new_client(ro)!
 
 	return &RedictStoreCookie{
 		CookieOptions:      co
 		RedictStoreOptions: rso
-		client:             redict.new_client(mut ro)
+		client:             c
+		luuid_generator:    luuid.new_generator()
 	}
 }
 
@@ -75,13 +78,13 @@ pub fn (mut store RedictStoreCookie) new(request http.Request, name string) Sess
 			if session := store.load(session_id) {
 				return session
 			} else {
-				return new_redict_session(name)
+				return new_redict_session(name, store.luuid_generator.v1())
 			}
 		} else {
-			return new_redict_session(name)
+			return new_redict_session(name, store.luuid_generator.v1())
 		}
 	} else {
-		return new_redict_session(name)
+		return new_redict_session(name, store.luuid_generator.v1())
 	}
 }
 
@@ -119,9 +122,9 @@ fn cookie_opts_del(cookie_opts CookieOptions) CookieOptions {
 	}
 }
 
-fn new_redict_session(name string) Session {
+fn new_redict_session(name string, id string) Session {
 	mut session := new_session(name)
-	session.id = luuid.v2()
+	session.id = id
 	return session
 }
 
@@ -168,17 +171,20 @@ pub struct RedictStoreJsonWebToken {
 	JsonWebTokenOptions
 	RedictStoreOptions
 mut:
-	client redict.Client
+	client          redict.Client
+	luuid_generator &luuid.Generator
 }
 
-pub fn new_redict_store_jwt(mut rso RedictStoreOptions, mut jwto JsonWebTokenOptions, mut ro redict.Options) !&RedictStoreJsonWebToken {
+pub fn new_redict_store_jwt(mut rso RedictStoreOptions, mut jwto JsonWebTokenOptions, ro redict.Options) !&RedictStoreJsonWebToken {
 	rso.init()
 	jwto.init()!
+	mut c := redict.new_client(ro)!
 
 	return &RedictStoreJsonWebToken{
 		JsonWebTokenOptions: jwto
 		RedictStoreOptions:  rso
-		client:              redict.new_client(mut ro)
+		client:              c
+		luuid_generator:     luuid.new_generator()
 	}
 }
 
@@ -199,10 +205,12 @@ pub fn (mut store RedictStoreJsonWebToken) get(mut request http.Request, name st
 
 pub fn (mut store RedictStoreJsonWebToken) new(request http.Request, name string) Session {
 	if payload := store.load_token(request.header, name) {
-		session := store.load(payload.sid) or { return new_redict_session(name) }
+		session := store.load(payload.sid) or {
+			return new_redict_session(name, store.luuid_generator.v1())
+		}
 		return session
 	} else {
-		return new_redict_session(name)
+		return new_redict_session(name, store.luuid_generator.v1())
 	}
 }
 
@@ -253,7 +261,7 @@ fn (store RedictStoreJsonWebToken) decode_token(token string) !JsonWebTokenRedic
 	}
 }
 
-fn (store RedictStoreJsonWebToken) new_token(session_id string) string {
+fn (mut store RedictStoreJsonWebToken) new_token(session_id string) string {
 	header := base64.url_encode(json.encode(new_header()).bytes())
 	payload := base64.url_encode(json.encode(store.new_payload(session_id)).bytes())
 
@@ -264,8 +272,8 @@ fn (store RedictStoreJsonWebToken) new_token(session_id string) string {
 	return '${header}.${payload}.${encoded_signature}'
 }
 
-fn (store RedictStoreJsonWebToken) new_payload(session_id string) JsonWebTokenRedictPayload {
-	new_payload := store.JsonWebTokenOptions.new_payload('')
+fn (mut store RedictStoreJsonWebToken) new_payload(session_id string) JsonWebTokenRedictPayload {
+	new_payload := store.JsonWebTokenOptions.new_payload('', mut store.luuid_generator)
 
 	return JsonWebTokenRedictPayload{
 		JsonWebTokenPayload: new_payload

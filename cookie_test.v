@@ -3,7 +3,7 @@ module sessions
 import net.http
 
 fn setup_request() http.Request {
-	return http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
+	return http.new_request(http.Method.get, 'einar-hjortdal.com/sugma', 'none')
 }
 
 fn setup_basic_cookie_opts() CookieOptions {

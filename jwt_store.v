@@ -2,10 +2,10 @@ module sessions
 
 import crypto.hmac
 import crypto.sha256
-import einar_hjortdal.luuid
 import encoding.base64
 import json
 import net.http
+import einar_hjortdal.luuid
 
 // JsonWebTokenStoreOptions is the struct to provide to new_jwt_store.
 pub struct JsonWebTokenStoreOptions {
@@ -16,6 +16,8 @@ pub struct JsonWebTokenStoreOptions {
 // Each JWT is stored in its own custom HTTP header.
 pub struct JsonWebTokenStore {
 	JsonWebTokenStoreOptions
+mut:
+	luuid_generator &luuid.Generator
 }
 
 // JsonWebTokenStorePayload contains RFC7519 claims together with session data.
@@ -38,6 +40,7 @@ pub fn new_jwt_store(mut opts JsonWebTokenStoreOptions) !&JsonWebTokenStore {
 
 	return &JsonWebTokenStore{
 		JsonWebTokenStoreOptions: opts
+		luuid_generator:          luuid.new_generator()
 	}
 }
 
@@ -54,7 +57,7 @@ pub fn (mut store JsonWebTokenStore) get(mut request http.Request, name string) 
 pub fn (mut store JsonWebTokenStore) new(request http.Request, name string) Session {
 	mut session := new_session(name)
 	store.load_token(request.header, mut session) or {
-		session.id = 'session_${luuid.v2()}'
+		session.id = 'session_${store.luuid_generator.v1()}'
 		return session
 	}
 	return session
@@ -126,7 +129,7 @@ fn (store JsonWebTokenStore) decode_token(token string) !JsonWebTokenStorePayloa
 	}
 }
 
-fn (store JsonWebTokenStore) new_token(session Session) string {
+fn (mut store JsonWebTokenStore) new_token(session Session) string {
 	header := base64.url_encode(json.encode(new_header()).bytes())
 	payload := base64.url_encode(json.encode(store.new_payload(session)).bytes())
 
@@ -137,8 +140,9 @@ fn (store JsonWebTokenStore) new_token(session Session) string {
 	return '${header}.${payload}.${encoded_signature}'
 }
 
-fn (store JsonWebTokenStore) new_payload(session Session) JsonWebTokenStorePayload {
-	new_payload := store.JsonWebTokenStoreOptions.JsonWebTokenOptions.new_payload('')
+fn (mut store JsonWebTokenStore) new_payload(session Session) JsonWebTokenStorePayload {
+	new_payload := store.JsonWebTokenStoreOptions.JsonWebTokenOptions.new_payload('', mut
+		store.luuid_generator)
 
 	return JsonWebTokenStorePayload{
 		iss:     new_payload.iss

@@ -5,7 +5,7 @@ import time
 import einar_hjortdal.redict
 
 fn setup_request() http.Request {
-	return http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
+	return http.new_request(http.Method.get, 'einar-hjortdal.com/sugma', 'none')
 }
 
 /*
@@ -19,11 +19,10 @@ fn setup_default_cookie_store() !&RedictStoreCookie {
 	co := CookieOptions{
 		secret: 'test_secret'
 	}
-	mut ro := redict.Options{
-		address:  'localhost:6379'
-		password: 'aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8'
+	ro := redict.Options{
+		url: ':aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8@localhost:6379'
 	}
-	return new_redict_store_cookie(mut rso, co, mut ro)!
+	return new_redict_store_cookie(mut rso, co, ro)!
 }
 
 fn setup_fifteen_minute_store() !&RedictStoreCookie {
@@ -32,11 +31,10 @@ fn setup_fifteen_minute_store() !&RedictStoreCookie {
 		secret:  'test_secret'
 		max_age: 15 * time.minute
 	}
-	mut ro := redict.Options{
-		address:  'localhost:6379'
-		password: 'aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8'
+	ro := redict.Options{
+		url: ':aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8@localhost:6379'
 	}
-	return new_redict_store_cookie(mut rso, co, mut ro)!
+	return new_redict_store_cookie(mut rso, co, ro)!
 }
 
 fn test_new_redict_store_cookie() {
@@ -87,7 +85,7 @@ fn test_store_cookie_save() {
 	assert set_cookie_headers[0].contains('Max-Age') == false
 	// Verify session data
 	mut get_res := store.client.get('${store.key_prefix}${session.id}') or { panic(err) }
-	assert get_res.err() == 'nil'
+	assert get_res.val() is redict.Nil
 	/*
 	*
 	* Fifteen-minute store
@@ -103,8 +101,10 @@ fn test_store_cookie_save() {
 	assert set_cookie_headers[0].starts_with('test_session')
 	assert set_cookie_headers[0].contains('Max-Age')
 	get_res = store.client.get('${store.key_prefix}${session.id}') or { panic(err) }
-	assert get_res.val().contains('${session.id}')
-	assert get_res.val().contains('Some data')
+
+	mut v := get_res.val()
+	assert v is string && v.contains('${session.id}')
+	assert v is string && v.contains('Some data')
 
 	// Test session.to_prune
 	session.to_prune = true
@@ -113,7 +113,7 @@ fn test_store_cookie_save() {
 	get_res = store.client.get('${store.key_prefix}${session.id}') or { panic(err) }
 	assert set_cookie_headers.len == 2
 	assert !set_cookie_headers[1].contains('expires')
-	assert get_res.err() == 'nil'
+	assert get_res.val() is redict.Nil
 }
 
 fn test_store_cookie_new_existing() {
@@ -151,11 +151,10 @@ fn setup_default_jwt_store() !&RedictStoreJsonWebToken {
 	mut jwto := JsonWebTokenOptions{
 		secret: 'test_secret'
 	}
-	mut ro := redict.Options{
-		address:  'localhost:6379'
-		password: 'aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8'
+	ro := redict.Options{
+		url: ':aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8@localhost:6379'
 	}
-	return new_redict_store_jwt(mut rso, mut jwto, mut ro)!
+	return new_redict_store_jwt(mut rso, mut jwto, ro)!
 }
 
 fn test_new_redict_store_jwt() {
@@ -192,15 +191,16 @@ fn test_store_jwt_save() {
 
 	// Verify data is put on Redict
 	mut get_res := store.client.get('${store.key_prefix}${session.id}') or { panic(err) }
-	assert get_res.err() != 'nil'
-	assert get_res.val().contains('Test-Session')
-	assert get_res.val().contains('Some data')
+	v := get_res.val()
+	assert v !is redict.Nil
+	assert v is string && v.contains('Test-Session')
+	assert v is string && v.contains('Some data')
 
 	// Test session.to_prune
 	session.to_prune = true
 	store.save(mut request.header, mut session) or { panic(err) }
 	get_res = store.client.get('${store.key_prefix}${session.id}') or { panic(err) }
-	assert get_res.err() == 'nil'
+	assert get_res.val() !is redict.Nil
 }
 
 fn test_store_jwt_new_existing() {

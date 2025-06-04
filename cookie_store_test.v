@@ -4,7 +4,7 @@ import net.http
 import json
 
 fn setup_request() http.Request {
-	return http.new_request(http.Method.get, 'coachonko.com/sugma', 'none')
+	return http.new_request(http.Method.get, 'einar-hjortdal.com/sugma', 'none')
 }
 
 fn test_cookie_store() {

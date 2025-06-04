@@ -98,7 +98,7 @@ struct JsonWebTokenPayload {
 	jti string
 }
 
-fn (opts JsonWebTokenOptions) new_payload(sub string) JsonWebTokenPayload {
+fn (opts JsonWebTokenOptions) new_payload(sub string, mut gen luuid.Generator) JsonWebTokenPayload {
 	mut new_exp := opts.get_exp()
 	mut new_nbf := opts.get_nbf()
 	return JsonWebTokenPayload{
@@ -108,13 +108,13 @@ fn (opts JsonWebTokenOptions) new_payload(sub string) JsonWebTokenPayload {
 		exp: new_exp.unix()
 		nbf: new_nbf.unix()
 		iat: time.now().unix()
-		jti: luuid.v2()
+		jti: gen.v1()
 	}
 }
 
-fn (opts JsonWebTokenOptions) new_token(sub string) string {
+fn (opts JsonWebTokenOptions) new_token(sub string, mut gen luuid.Generator) string {
 	header := base64.url_encode(json.encode(new_header()).bytes())
-	payload := base64.url_encode(json.encode(opts.new_payload(sub)).bytes())
+	payload := base64.url_encode(json.encode(opts.new_payload(sub, mut gen)).bytes())
 
 	signature := hmac.new(opts.secret.bytes(), '${header}.${payload}'.bytes(), sha256.sum,
 		sha256.block_size).bytestr()
