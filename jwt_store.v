@@ -7,15 +7,10 @@ import json
 import net.http
 import einar_hjortdal.luuid
 
-// JsonWebTokenStoreOptions is the struct to provide to new_jwt_store.
-pub struct JsonWebTokenStoreOptions {
-	JsonWebTokenOptions
-}
-
 // The JsonWebTokenStore allows to store session data on the client in the form of a JWT.
 // Each JWT is stored in its own custom HTTP header.
 pub struct JsonWebTokenStore {
-	JsonWebTokenStoreOptions
+	JsonWebTokenOptions
 mut:
 	luuid_generator &luuid.Generator
 }
@@ -35,12 +30,10 @@ struct JsonWebTokenStorePayload {
 }
 
 // new_jwt_store creates a JsonWebTokenStore with the given options.
-pub fn new_jwt_store(mut opts JsonWebTokenStoreOptions) !&JsonWebTokenStore {
-	opts.JsonWebTokenOptions.init()!
-
+pub fn new_jwt_store(mut opts JsonWebTokenOptions) !&JsonWebTokenStore {
 	return &JsonWebTokenStore{
-		JsonWebTokenStoreOptions: opts
-		luuid_generator:          luuid.new_generator()
+		JsonWebTokenOptions: opts.init()!
+		luuid_generator:     luuid.new_generator()
 	}
 }
 
@@ -141,8 +134,7 @@ fn (mut store JsonWebTokenStore) new_token(session Session) string {
 }
 
 fn (mut store JsonWebTokenStore) new_payload(session Session) JsonWebTokenStorePayload {
-	new_payload := store.JsonWebTokenStoreOptions.JsonWebTokenOptions.new_payload('', mut
-		store.luuid_generator)
+	new_payload := store.JsonWebTokenOptions.new_payload('', mut store.luuid_generator)
 
 	return JsonWebTokenStorePayload{
 		iss:     new_payload.iss

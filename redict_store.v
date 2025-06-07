@@ -11,7 +11,7 @@ import einar_hjortdal.redict
 
 // RedictStoreOptions is the struct to provide to new_redict_store_cookie.
 pub struct RedictStoreOptions {
-pub mut:
+pub:
 	// max_length limits the size of the value of the session stored in Redict. Defaults to 4096 bytes.
 	max_length int
 	// key_prefix is the prefix used used in keys when storing data on a Redict server. Defaults to 'session_'.
@@ -21,13 +21,25 @@ pub mut:
 	refresh_expire bool
 }
 
-fn (mut rso RedictStoreOptions) init() {
+fn (rso RedictStoreOptions) get_max_length() int {
 	if rso.max_length == 0 {
-		rso.max_length = 4096
+		return 4096
 	}
+	return rso.max_length
+}
 
+fn (rso RedictStoreOptions) get_key_prefix() string {
 	if rso.key_prefix == '' {
-		rso.key_prefix = 'session_'
+		return 'session_'
+	}
+	return rso.key_prefix
+}
+
+fn (rso RedictStoreOptions) init() RedictStoreOptions {
+	return RedictStoreOptions{
+		max_length:     rso.get_max_length()
+		key_prefix:     rso.get_key_prefix()
+		refresh_expire: rso.refresh_expire
 	}
 }
 
@@ -51,11 +63,9 @@ mut:
 // new_redict_store_cookie returns a new `RedictStore` utilizing the provided `RedictStoreOptions`, `CookieOptions`
 // and `redict.Options`.
 pub fn new_redict_store_cookie(mut rso RedictStoreOptions, co CookieOptions, ro redict.Options) !&RedictStoreCookie {
-	rso.init()
-
 	return &RedictStoreCookie{
 		CookieOptions:      co
-		RedictStoreOptions: rso
+		RedictStoreOptions: rso.init()
 		client:             redict.new_client(ro)!
 		luuid_generator:    luuid.new_generator()
 	}
@@ -175,12 +185,9 @@ mut:
 }
 
 pub fn new_redict_store_jwt(mut rso RedictStoreOptions, mut jwto JsonWebTokenOptions, ro redict.Options) !&RedictStoreJsonWebToken {
-	rso.init()
-	jwto.init()!
-
 	return &RedictStoreJsonWebToken{
-		JsonWebTokenOptions: jwto
-		RedictStoreOptions:  rso
+		JsonWebTokenOptions: jwto.init()!
+		RedictStoreOptions:  rso.init()
 		client:              redict.new_client(ro)!
 		luuid_generator:     luuid.new_generator()
 	}

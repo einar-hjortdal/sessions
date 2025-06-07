@@ -40,31 +40,25 @@ pub mut:
 	valid_until time.Time
 }
 
-fn (mut opts JsonWebTokenOptions) init() ! {
-	if opts.secret == '' {
+fn (o JsonWebTokenOptions) init() !JsonWebTokenOptions {
+	if o.secret == '' {
 		return error(format_error_message('secret must be provided'))
 	}
 
-	if opts.issuer == '' {
-		opts.issuer = 'Einar Hjortdal'
-	}
+	app_name := default_string(o.app_name, author)
+	audience := default_string(o.audience, app_name)
+	issuer := default_string(o.issuer, author)
+	default_only_from := time.parse_rfc3339('2023-07-01T00:00:00.000Z') or { panic(err) } // will never panic
+	only_from := default_time(o.only_from, default_only_from)
+	prefix := default_string(o.app_name, '${author}-')
 
-	if opts.app_name == '' {
-		opts.app_name = 'Einar Hjortdal'
-	}
-
-	if opts.audience == '' {
-		opts.audience = opts.app_name
-	}
-
-	if opts.only_from.format_rfc3339() == '0000-00-00T00:00:00.000Z' {
-		opts.only_from = time.parse_rfc3339('2023-07-01T00:00:00.000Z') or {
-			return error(format_error_message('Failed to set default only_from value'))
-		}
-	}
-
-	if opts.prefix == '' {
-		opts.prefix = 'Einar-Hjortdal-'
+	return JsonWebTokenOptions{
+		app_name:  app_name
+		audience:  audience
+		issuer:    issuer
+		only_from: only_from
+		prefix:    prefix
+		secret:    o.secret
 	}
 }
 
