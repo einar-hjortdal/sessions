@@ -2,12 +2,12 @@ module sessions
 
 import crypto.hmac
 import crypto.sha256
-import einar_hjortdal.luuid
-import einar_hjortdal.redict
 import encoding.base64
 import json
 import net.http
 import time
+import einar_hjortdal.luuid
+import einar_hjortdal.redict
 
 // RedictStoreOptions is the struct to provide to new_redict_store_cookie.
 pub struct RedictStoreOptions {
@@ -44,7 +44,7 @@ pub struct RedictStoreCookie {
 	CookieOptions
 	RedictStoreOptions
 mut:
-	client          redict.Client
+	client          &redict.Client
 	luuid_generator &luuid.Generator
 }
 
@@ -52,12 +52,11 @@ mut:
 // and `redict.Options`.
 pub fn new_redict_store_cookie(mut rso RedictStoreOptions, co CookieOptions, ro redict.Options) !&RedictStoreCookie {
 	rso.init()
-	mut c := redict.new_client(ro)!
 
 	return &RedictStoreCookie{
 		CookieOptions:      co
 		RedictStoreOptions: rso
-		client:             c
+		client:             redict.new_client(ro)!
 		luuid_generator:    luuid.new_generator()
 	}
 }
@@ -171,19 +170,18 @@ pub struct RedictStoreJsonWebToken {
 	JsonWebTokenOptions
 	RedictStoreOptions
 mut:
-	client          redict.Client
+	client          &redict.Client
 	luuid_generator &luuid.Generator
 }
 
 pub fn new_redict_store_jwt(mut rso RedictStoreOptions, mut jwto JsonWebTokenOptions, ro redict.Options) !&RedictStoreJsonWebToken {
 	rso.init()
 	jwto.init()!
-	mut c := redict.new_client(ro)!
 
 	return &RedictStoreJsonWebToken{
 		JsonWebTokenOptions: jwto
 		RedictStoreOptions:  rso
-		client:              c
+		client:              redict.new_client(ro)!
 		luuid_generator:     luuid.new_generator()
 	}
 }
