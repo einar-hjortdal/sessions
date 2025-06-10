@@ -82,19 +82,16 @@ pub fn (mut store RedictStoreCookie) get(mut request http.Request, name string) 
 }
 
 pub fn (mut store RedictStoreCookie) new(request http.Request, name string) Session {
-	if request_cookie := get_cookie_value(request, name) {
-		if session_id := decode_value(request_cookie, store.secret) {
-			if session := store.load(session_id) {
-				return session
-			} else {
-				return new_redict_session(name, store.luuid_generator.v1())
-			}
-		} else {
-			return new_redict_session(name, store.luuid_generator.v1())
-		}
-	} else {
+	request_cookie := get_cookie_value(request, name) or {
 		return new_redict_session(name, store.luuid_generator.v1())
 	}
+	session_id := decode_value(request_cookie, store.secret) or {
+		return new_redict_session(name, store.luuid_generator.v1())
+	}
+	session := store.load(session_id) or {
+		return new_redict_session(name, store.luuid_generator.v1())
+	}
+	return session
 }
 
 // save stores a `Session` in Redict and gives the client a signed cookie containing the session ID.
@@ -209,14 +206,13 @@ pub fn (mut store RedictStoreJsonWebToken) get(mut request http.Request, name st
 }
 
 pub fn (mut store RedictStoreJsonWebToken) new(request http.Request, name string) Session {
-	if payload := store.load_token(request.header, name) {
-		session := store.load(payload.sid) or {
-			return new_redict_session(name, store.luuid_generator.v1())
-		}
-		return session
-	} else {
+	payload := store.load_token(request.header, name) or {
 		return new_redict_session(name, store.luuid_generator.v1())
 	}
+	session := store.load(payload.sid) or {
+		return new_redict_session(name, store.luuid_generator.v1())
+	}
+	return session
 }
 
 // save stores a `Session` in Redict and gives the client a signed JWT containing the session ID.

@@ -33,16 +33,10 @@ pub fn (mut store CookieStore) get(mut request http.Request, name string) Sessio
 }
 
 pub fn (mut store CookieStore) new(request http.Request, name string) Session {
-	if existing_session := get_cookie_value(request, name) {
-		if decoded_value := decode_value(existing_session, store.secret) {
-			session := json.decode(Session, decoded_value) or { return new_session(name) }
-			return session
-		} else {
-			return new_session(name)
-		}
-	} else {
-		return new_session(name)
-	}
+	existing_session := get_cookie_value(request, name) or { return new_session(name) }
+	decoded_value := decode_value(existing_session, store.secret) or { return new_session(name) }
+	session := json.decode(Session, decoded_value) or { return new_session(name) }
+	return session
 }
 
 // save puts the session in a `Set-Cookie` header in the response `Header`.
