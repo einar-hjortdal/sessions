@@ -53,12 +53,16 @@ fn (o JsonWebTokenOptions) init() !JsonWebTokenOptions {
 	prefix := default_string(o.app_name, '${author}-')
 
 	return JsonWebTokenOptions{
-		app_name:  app_name
-		audience:  audience
-		issuer:    issuer
-		only_from: only_from
-		prefix:    prefix
-		secret:    o.secret
+		app_name:    app_name
+		audience:    audience
+		issuer:      issuer
+		only_from:   only_from
+		prefix:      prefix
+		secret:      o.secret
+		valid_start: o.valid_start
+		valid_end:   o.valid_end
+		valid_from:  o.valid_from
+		valid_until: o.valid_until
 	}
 }
 

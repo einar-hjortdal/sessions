@@ -22,11 +22,11 @@ fn setup_default_cookie_store() !&RedictStoreCookie {
 	ro := redict.Options{
 		url: ':aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8@localhost:6379'
 	}
-	return new_redict_store_cookie(mut rso, co, ro)!
+	return new_redict_store_cookie(rso, co, ro)!
 }
 
 fn setup_fifteen_minute_store() !&RedictStoreCookie {
-	mut rso := RedictStoreOptions{}
+	rso := RedictStoreOptions{}
 	co := CookieOptions{
 		secret:  'test_secret'
 		max_age: 15 * time.minute
@@ -34,7 +34,7 @@ fn setup_fifteen_minute_store() !&RedictStoreCookie {
 	ro := redict.Options{
 		url: ':aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8@localhost:6379'
 	}
-	return new_redict_store_cookie(mut rso, co, ro)!
+	return new_redict_store_cookie(rso, co, ro)!
 }
 
 fn test_new_redict_store_cookie() {

@@ -10,24 +10,24 @@ fn setup_request() http.Request {
 // test_new_jwt_store checks whether all options are handled as expected.
 fn test_new_jwt_store() {
 	// must return an error when options do not contain a secret.
-	mut opts_no_secret := JsonWebTokenStoreOptions{}
+	mut opts_no_secret := JsonWebTokenOptions{}
 	if _ := new_jwt_store(mut opts_no_secret) {
 		assert false // should not happen
 	} else {
-		assert err.msg() == 'secret must be provided'
+		assert err.msg() == format_error_message('secret must be provided')
 	}
 	//
 	// should set correct default values
 	//
-	mut opts_defaults := JsonWebTokenStoreOptions{
+	mut opts_defaults := JsonWebTokenOptions{
 		secret: 'test'
 	}
 	if store := new_jwt_store(mut opts_defaults) {
 		assert store.secret == 'test'
-		assert store.issuer == 'Einar Hjortdal'
+		assert store.issuer == 'Einar-Hjortdal'
 		assert store.only_from.format_rfc3339() == '2023-07-01T00:00:00.000Z'
-		assert store.app_name == 'Einar Hjortdal'
-		assert store.audience == 'Einar Hjortdal'
+		assert store.app_name == 'Einar-Hjortdal'
+		assert store.audience == 'Einar-Hjortdal'
 		assert store.valid_start == 0
 	} else {
 		assert false // failed to set defaults
@@ -35,7 +35,7 @@ fn test_new_jwt_store() {
 	//
 	// should respect user-given values
 	//
-	mut opts_given := JsonWebTokenStoreOptions{
+	mut opts_given := JsonWebTokenOptions{
 		secret:      'test_secret'
 		issuer:      'test_issuer'
 		only_from:   time.parse_rfc3339('2023-07-01T12:00:00.000Z') or { time.now() }
@@ -60,7 +60,7 @@ fn test_new_jwt_store() {
 
 // test_new_session checks whether a session is successfully created.
 fn test_new_session() {
-	mut opts_defaults := JsonWebTokenStoreOptions{
+	mut opts_defaults := JsonWebTokenOptions{
 		secret: 'test'
 	}
 	mut request := setup_request()
@@ -85,7 +85,7 @@ fn test_new_session() {
 
 // test_save_session checks whether a session is successfully stored in a header.
 fn test_save_session() {
-	mut opts := JsonWebTokenStoreOptions{
+	mut opts := JsonWebTokenOptions{
 		secret: 'test'
 	}
 	request := setup_request()
@@ -110,7 +110,7 @@ fn test_save_session() {
 // test_new_save checks whether a session is successfully created, stored in a token and retrieved.
 fn test_new_save() {
 	// With this test we set a new valid header and attempt to read it into a session.
-	mut opts := JsonWebTokenStoreOptions{
+	mut opts := JsonWebTokenOptions{
 		secret: 'test'
 	}
 	mut request := setup_request()
@@ -135,7 +135,7 @@ fn test_new_save() {
 // test_new_save_nfb checks if valid_from works
 fn test_new_save_nfb() {
 	// nbf
-	mut opts := JsonWebTokenStoreOptions{
+	mut opts := JsonWebTokenOptions{
 		secret:     'test'
 		valid_from: time.now().add(12 * time.hour)
 	}
@@ -156,28 +156,22 @@ fn test_new_save_nfb() {
 
 // test_new_save_exp checks if valid_until works
 fn test_new_save_exp() {
-	mut opts := JsonWebTokenStoreOptions{
+	mut opts := JsonWebTokenOptions{
 		secret:      'test'
 		valid_until: time.now().add(-12 * time.hour)
 	}
 	mut request := setup_request()
-	mut store := new_jwt_store(mut opts) or {
-		assert false // Should not happen, see test_new_jwt_store
-		return
-	}
+	mut store := new_jwt_store(mut opts)!
 	mut session := store.new(request, 'Test-Session')
 	session.values = 'exp test'
-	store.save(mut request.header, mut session) or {
-		assert false // failed to save session
-		return
-	}
+	store.save(mut request.header, mut session)!
 	session = store.new(request, 'Test-Session')
 	assert session.values == ''
 }
 
 // test_new_save_aud checks if audience works
 fn test_new_save_aud() {
-	mut opts := JsonWebTokenStoreOptions{
+	mut opts := JsonWebTokenOptions{
 		secret:   'test'
 		audience: 'nobody'
 	}
@@ -198,7 +192,7 @@ fn test_new_save_aud() {
 
 // test_new_save_iat checks whether only_from works
 fn test_new_save_iat() {
-	mut opts := JsonWebTokenStoreOptions{
+	mut opts := JsonWebTokenOptions{
 		secret:    'test'
 		only_from: time.now().add(12 * time.hour)
 	}
@@ -218,7 +212,7 @@ fn test_new_save_iat() {
 }
 
 fn test_multiple_sessions() {
-	mut opts_defaults := JsonWebTokenStoreOptions{
+	mut opts_defaults := JsonWebTokenOptions{
 		secret: 'test'
 	}
 	mut request := setup_request()

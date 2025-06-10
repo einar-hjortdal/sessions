@@ -7,13 +7,13 @@ import net.http
 import time
 
 pub struct CookieOptions {
+pub:
 	domain    string
 	http_only bool
 	path      string
 	// secret is a string used to sign the cookie.
 	secret string
 	secure bool
-mut:
 	// max_age=0 means no Max-Age attribute specified and the cookie will be deleted after the browser
 	// session ends.
 	// max_age<0 means delete cookie immediately.

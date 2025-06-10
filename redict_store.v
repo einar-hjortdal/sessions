@@ -62,7 +62,7 @@ mut:
 
 // new_redict_store_cookie returns a new `RedictStore` utilizing the provided `RedictStoreOptions`, `CookieOptions`
 // and `redict.Options`.
-pub fn new_redict_store_cookie(mut rso RedictStoreOptions, co CookieOptions, ro redict.Options) !&RedictStoreCookie {
+pub fn new_redict_store_cookie(rso RedictStoreOptions, co CookieOptions, ro redict.Options) !&RedictStoreCookie {
 	return &RedictStoreCookie{
 		CookieOptions:      co
 		RedictStoreOptions: rso.init()
