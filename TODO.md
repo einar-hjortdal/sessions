@@ -9,3 +9,5 @@
   - Add filters to `validate_token`
 - Implement new stores:
   - File system. Useful for prototyping and simple apps with a single backend server.
+- Redict store
+  - Allow using eexisting redict client when creating a store
