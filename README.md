@@ -7,9 +7,9 @@ It features a simple API: just name a session, everything else is handled intern
 
 ## First-party `Store` implementations
 
-- (JWT)[#JWT]
-- (Cookie)[#Cookie]
-- (Redict)[#Redict] (Compatible with Redis <=7.2.4)
+- [JWT](#JWT)
+- [Cookie](#Cookie)
+- [Redict](#Redict) (Compatible with Redis <=7.2.4)
 
 ### JWT
 
@@ -85,7 +85,7 @@ cookie_store.save(response_header, session)
 
 ### Redict
 
-- All session data is stored in a Redict instance. Relies on (einar-hjortdal/redict)[https://github.com/einar-hjortdal/redict].
+- All session data is stored in a Redict instance. Relies on [einar-hjortdal/redict](https://github.com/einar-hjortdal/redict).
 - Session ID is stored on the client using a cookie or a JWT.
 - Supports multiple sessions per request.
 
