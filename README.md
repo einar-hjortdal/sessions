@@ -3,10 +3,7 @@
 sessions is a web-framework-agnostic library for managing sessions in web applications written in the 
 V language.
 
-Features:
-
-- Simple API. You just need to provide a name for a session.
-- Multiple sessions per request.
+It features a simple API: just name a session, everything else is handled internally.
 
 ## First-party `Store` implementations
 
@@ -16,8 +13,9 @@ Features:
 
 ### JWT
 
-The JWT store puts all session data on the client in the form of a JWT, no session data is stored on 
-the server.
+- All session data is stored on the client in the form of a JWT.
+- No data is stored on the server.
+- Supports multiple sessions per request.
 
 Install with `v install einar-hjortdal.sessions`
 
@@ -50,8 +48,9 @@ jwt_store.save(response_header, session)
 
 ### Cookie
 
-The Cookie store puts all session data on the client in the form of a Cookie, no session data is stored 
-on the server.
+- All session data is stored on the client in the form of a Cookie
+- No session data is stored on the server.
+- Supports multiple sessions per request.
 
 Install with `v install einar-hjortdal.sessions`
 
@@ -86,16 +85,15 @@ cookie_store.save(response_header, session)
 
 ### Redict
 
-Relies on (einar-hjortdal/redict)[https://github.com/einar-hjortdal/redict]
-
-Redict store stores session data in a Redict instance. To match requests to their session data, there 
-are two options:
-1. A cookie is given to the client, this cookie contains a session id.
-2. A JWT is given to the client as a custom header, the `sid` claim contains the session id.
+- All session data is stored in a Redict instance. Relies on (einar-hjortdal/redict)[https://github.com/einar-hjortdal/redict].
+- Session ID is stored on the client using a cookie or a JWT.
+- Supports multiple sessions per request.
 
 Install with `v install einar-hjortdal.sessions`
 
-#### Cookie version
+#### Cookie
+
+A cookie is given to the client, this cookie contains a session id.
 
 ```V
 // import the module
@@ -131,7 +129,9 @@ session.values = json.encode(MySessionData, data) // MySessionData is defined by
 store.save(mut response_header, mut session)
 ```
 
-#### JWT version
+#### JWT
+
+A JWT is given to the client as a *custom header*, the `sid` claim contains the session id.
 
 ```V
 // import the module
@@ -156,8 +156,6 @@ Submit a pull request to have your implementation listed here.
 
 - It is important to implement race condition mitigation strategies within the route handler, such as 
   *optimistic locking with version number*.
-- Both `JsonWebTokenStore` and `RedictStoreJsonWebToken` use custom headers, this allows to store multiple 
-  sessions on one response.
 
 ## Development
 
