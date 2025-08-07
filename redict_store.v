@@ -71,6 +71,15 @@ pub fn new_redict_store_cookie(rso RedictStoreOptions, co CookieOptions, ro redi
 	}
 }
 
+pub fn new_redict_store_cookie_from_redict_client(rso RedictStoreOptions, co CookieOptions, rc &redict.Client) &RedictStoreCookie {
+	return &RedictStoreCookie{
+		CookieOptions:      co
+		RedictStoreOptions: rso.init()
+		client:             rc
+		luuid_generator:    luuid.new_generator()
+	}
+}
+
 /*
 *
 * Store interface
@@ -186,6 +195,15 @@ pub fn new_redict_store_jwt(mut rso RedictStoreOptions, mut jwto JsonWebTokenOpt
 		JsonWebTokenOptions: jwto.init()!
 		RedictStoreOptions:  rso.init()
 		client:              redict.new_client(ro)!
+		luuid_generator:     luuid.new_generator()
+	}
+}
+
+pub fn new_redict_store_jwt_from_redict_client(mut rso RedictStoreOptions, mut jwto JsonWebTokenOptions, rc &redict.Client) !&RedictStoreJsonWebToken {
+	return &RedictStoreJsonWebToken{
+		JsonWebTokenOptions: jwto.init()!
+		RedictStoreOptions:  rso.init()
+		client:              rc
 		luuid_generator:     luuid.new_generator()
 	}
 }
