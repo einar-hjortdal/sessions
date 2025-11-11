@@ -7,5 +7,3 @@
   - Requires `http.Request` to have a Context in order to store the `Registry`.
 - JWT store
   - Add filters to `validate_token`
-- Redict store
-  - Allow using existing redict client when creating a store
