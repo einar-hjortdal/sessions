@@ -37,7 +37,7 @@ Please follow these standards
 - `route_` files define endpoints and validate request inputs.
 - `conduit_` files manage transactions and prepare responses.
 - `suite_` files aggregate related database operations.
-- `model_` files define indeividual database operations.
+- `model_` files define individual database operations.
 
 ### FirebirdSQL
 
