@@ -1,5 +1,7 @@
 module sessions
 
+import arrays
+
 pub struct Session {
 pub:
 	// name is the property utilized by users of the sessions library.
@@ -46,5 +48,5 @@ pub fn (mut session Session) add_flash(kind string, message string) {
 		message:  message
 		consumed: false
 	}
-	session.flashes << new_flash
+	session.flashes = arrays.concat(session.flashes, new_flash)
 }

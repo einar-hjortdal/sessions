@@ -14,6 +14,7 @@ pub:
 	// secret is a string used to sign the cookie.
 	secret string
 	secure bool
+	// Note: max_age will be converted to an i32 representing the number of seconds.
 	// max_age=0 means no Max-Age attribute specified and the cookie will be deleted after the browser
 	// session ends.
 	// max_age<0 means delete cookie immediately.
@@ -41,7 +42,7 @@ fn new_cookie(name string, value string, cookie_opts CookieOptions) !http.Cookie
 		domain:    cookie_opts.domain
 		expires:   new_expires
 		http_only: cookie_opts.http_only
-		max_age:   int(cookie_opts.max_age.seconds())
+		max_age:   i32(cookie_opts.max_age / time.second)
 		name:      name
 		path:      cookie_opts.path
 		secure:    cookie_opts.secure
@@ -56,10 +57,10 @@ fn new_signature(encoded_session_id string, secret string) !string {
 	return hmac.new(secret.bytes(), encoded_session_id.bytes(), sha256.sum, sha256.block_size).bytestr()
 }
 
-// decode_value decodes the value of a cookie created with `new_cookie`.
+// decode_cookie_value decodes the value of a cookie created with `new_cookie`.
 // Whatever value is given to new_cookie will be returned by this function.
 // This function returns an error if the signature is not valid.
-fn decode_value(value string, secret string) !string {
+fn decode_cookie_value(value string, secret string) !string {
 	value_split := value.split('$')
 
 	decoded_signature := base64.url_decode(value_split[1]).bytestr()

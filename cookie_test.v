@@ -30,7 +30,7 @@ fn test_decoding() {
 		assert false
 		return
 	}
-	decoded_value := decode_value(test_cookie.value, opts.secret) or {
+	decoded_value := decode_cookie_value(test_cookie.value, opts.secret) or {
 		assert false
 		return
 	}

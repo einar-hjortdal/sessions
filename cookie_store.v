@@ -34,7 +34,9 @@ pub fn (mut store CookieStore) get(mut request http.Request, name string) Sessio
 
 pub fn (mut store CookieStore) new(request http.Request, name string) Session {
 	existing_session := get_cookie_value(request, name) or { return new_session(name) }
-	decoded_value := decode_value(existing_session, store.secret) or { return new_session(name) }
+	decoded_value := decode_cookie_value(existing_session, store.secret) or {
+		return new_session(name)
+	}
 	session := json.decode(Session, decoded_value) or { return new_session(name) }
 	return session
 }

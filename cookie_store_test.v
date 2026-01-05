@@ -24,7 +24,7 @@ fn test_cookie_store() {
 
 	set_cookie_header := request.header.get(http.CommonHeader.set_cookie)!
 	cookie_value := set_cookie_header.trim_string_left('test_session=')
-	decoded_value := decode_value(cookie_value, store.secret) or {
+	decoded_value := decode_cookie_value(cookie_value, store.secret) or {
 		assert false
 		return
 	}

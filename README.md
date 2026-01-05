@@ -1,5 +1,3 @@
-<span style="background-color: #226f54; font-size: 125%; padding-top: 1.25%; padding-right: 2.5%; padding-bottom: 1.25%; padding-left: 2.5%; border-radius: 25px;">This project is active: new features are being developed, bugs are being fixed.</span>
-
 # sessions
 
 sessions is a web-framework-agnostic library for managing sessions in web applications written in the 
@@ -12,6 +10,7 @@ It features a simple API: just name a session, everything else is handled intern
 - [JWT](#JWT)
 - [Cookie](#Cookie)
 - [Redict](#Redict) (Compatible with Redis <=7.2.4)
+- [FirebirdSQL](#FirebirdSQL)
 
 ### JWT
 
@@ -146,6 +145,21 @@ mut jwto := JsonWebTokenOptions{
 }
 mut ro := redict.Options{}
 store := new_redict_store_jwt(mut rso, mut jwto, ro)!
+
+// Create (or load) and save sessions as with the cookie version
+```
+
+### FirebirdSQL
+
+```V
+// import the module
+import einar_hjortdal.sessions
+
+fbo := FirebirdStoreOptions{
+  url: 'firebird://user:password@localhost:3050/var/lib/firebird/data/firebird.fdb'
+}
+
+store := new_firebird_store(fbo)!
 
 // Create (or load) and save sessions as with the cookie version
 ```

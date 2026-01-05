@@ -2,13 +2,14 @@ Module{
 	name: 'sessions'
 	description: 'session management for V web applications'
 	author: 'einar-hjortdal'
-	version: '3.3.0'
+	version: '3.4.0'
 	repo_url: 'https://github.com/einar-hjortdal/sessions'
 	dependencies: [
+		'einar-hjortdal.firebird',
 		'einar-hjortdal.redict',
 		'einar-hjortdal.luuid'
 	]
 	vcs: 'git'
-	tags: ['veb', 'redict', 'jwt', 'cookie', 'sessions']
+	tags: ['veb', 'redict', 'jwt', 'cookie', 'sessions', 'firebird', 'sql']
 	license: 'NCSA'
 }

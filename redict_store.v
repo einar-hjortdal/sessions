@@ -94,7 +94,7 @@ pub fn (mut store RedictStoreCookie) new(request http.Request, name string) Sess
 	request_cookie := get_cookie_value(request, name) or {
 		return new_redict_session(name, store.luuid_generator.v1())
 	}
-	session_id := decode_value(request_cookie, store.secret) or {
+	session_id := decode_cookie_value(request_cookie, store.secret) or {
 		return new_redict_session(name, store.luuid_generator.v1())
 	}
 	session := store.load(session_id) or {
