@@ -17,12 +17,10 @@ mut:
 }
 
 // if an existing connection is provided it will be used, otherwise a new connection will be started using the given url.
-// A prefix is used to namespace the sessions table in the database. If not provided, firebird_default_prefix is used.
 pub struct FirebirdStoreOptions {
 	CookieOptions
 pub:
 	url    string
-	prefix string
 pub mut:
 	connection ?&firebird.Connection
 }

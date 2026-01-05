@@ -151,15 +151,22 @@ store := new_redict_store_jwt(mut rso, mut jwto, ro)!
 
 ### FirebirdSQL
 
+Sets a cookie with the session id on the client, all data is stored in a FirebirdSQL table.
+
 ```V
 // import the module
 import einar_hjortdal.sessions
 
-fbo := FirebirdStoreOptions{
+store := new_firebird_store(FirebirdStoreOptions{
+  CookieOptions{
+    http_only: true
+    path:      '/'
+    secret:    'A strong secret'
+    secure:    true
+    max_age:   24 * time.hour
+  }
   url: 'firebird://user:password@localhost:3050/var/lib/firebird/data/firebird.fdb'
-}
-
-store := new_firebird_store(fbo)!
+})!
 
 // Create (or load) and save sessions as with the cookie version
 ```
