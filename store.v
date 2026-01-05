@@ -10,5 +10,5 @@ pub interface Store {
 mut:
 	get(mut request http.Request, name string) Session
 	new(request http.Request, name string) Session
-	save(mut response_header http.Header, mut session Session) !
+	save(mut response_header http.Header, session Session) !
 }

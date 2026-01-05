@@ -20,7 +20,7 @@ mut:
 pub struct FirebirdStoreOptions {
 	CookieOptions
 pub:
-	url    string
+	url string
 pub mut:
 	connection ?&firebird.Connection
 }
@@ -164,7 +164,7 @@ pub fn (mut store FirebirdStore) new(request http.Request, name string) Session 
 	return session
 }
 
-pub fn (mut store FirebirdStore) save(mut response_header http.Header, mut session Session) ! {
+pub fn (mut store FirebirdStore) save(mut response_header http.Header, session Session) ! {
 	if store.CookieOptions.max_age <= 0 || session.to_prune {
 		store.delete(session.id)!
 		new_cookie_opts := cookie_opts_del(store.CookieOptions)

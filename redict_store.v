@@ -107,7 +107,7 @@ pub fn (mut store RedictStoreCookie) new(request http.Request, name string) Sess
 // It can also be used to delete a session from Redict and from the client: when `Session.to_prune` is
 // is set to `true`, then this method deletes the session data from Redict and instructs the client to
 // delete the cookie.
-pub fn (mut store RedictStoreCookie) save(mut response_header http.Header, mut session Session) ! {
+pub fn (mut store RedictStoreCookie) save(mut response_header http.Header, session Session) ! {
 	if store.CookieOptions.max_age <= 0 || session.to_prune {
 		store.client.del('${store.key_prefix}${session.id}')!
 		new_cookie_opts := cookie_opts_del(store.CookieOptions)
@@ -236,7 +236,7 @@ pub fn (mut store RedictStoreJsonWebToken) new(request http.Request, name string
 // save stores a `Session` in Redict and gives the client a signed JWT containing the session ID.
 // It can also be used to delete a session from Redict: when `Session.to_prune` is set to `true`, then
 // this method deletes the session data from Redict.
-pub fn (mut store RedictStoreJsonWebToken) save(mut response_header http.Header, mut session Session) ! {
+pub fn (mut store RedictStoreJsonWebToken) save(mut response_header http.Header, session Session) ! {
 	if session.to_prune {
 		store.client.del('${store.key_prefix}${session.id}')!
 	} else {

@@ -76,7 +76,7 @@ fn test_store_cookie_save() {
 	mut store := setup_default_cookie_store()!
 	mut request := setup_request()
 	mut session := store.new(request, 'test_session')
-	store.save(mut request.header, mut session)!
+	store.save(mut request.header, session)!
 	// The default `CookieOptions.max_age` is set to `0`.
 	// Verify session cookie has no Max-Age attribute.
 	mut set_cookie_headers := request.header.values(http.CommonHeader.set_cookie)
@@ -95,7 +95,7 @@ fn test_store_cookie_save() {
 	request = setup_request()
 	session = store.new(request, 'test_session')
 	session.values = 'Some data'
-	store.save(mut request.header, mut session)!
+	store.save(mut request.header, session)!
 	set_cookie_headers = request.header.values(http.CommonHeader.set_cookie)
 	assert set_cookie_headers.len == 1
 	assert set_cookie_headers[0].starts_with('test_session')
@@ -108,7 +108,7 @@ fn test_store_cookie_save() {
 
 	// Test session.to_prune
 	session.to_prune = true
-	store.save(mut request.header, mut session)!
+	store.save(mut request.header, session)!
 	set_cookie_headers = request.header.values(http.CommonHeader.set_cookie)
 	get_res = store.client.get('${store.key_prefix}${session.id}')!
 	assert set_cookie_headers.len == 2
@@ -121,7 +121,7 @@ fn test_store_cookie_new_existing() {
 	mut request := setup_request()
 	mut session_one := store.new(request, 'test_session')
 	session_one.values = 'test_value'
-	store.save(mut request.header, mut session_one)!
+	store.save(mut request.header, session_one)!
 	// `Store.save` sets a `Set-Cookie` header but `Store.new` uses the `Request.cookie` method.
 	set_cookie_header := request.header.get(http.CommonHeader.set_cookie) or {
 		assert false // header missing
@@ -182,7 +182,7 @@ fn test_store_jwt_save() {
 	mut request := setup_request()
 	mut session := store.new(request, 'Test-Session')
 	session.values = 'Some data'
-	store.save(mut request.header, mut session)!
+	store.save(mut request.header, session)!
 
 	// Verify header is set
 	mut custom_headers := request.header.custom_values('Einar-Hjortdal-Test-Session')
@@ -197,7 +197,7 @@ fn test_store_jwt_save() {
 
 	// Test session.to_prune
 	session.to_prune = true
-	store.save(mut request.header, mut session)!
+	store.save(mut request.header, session)!
 	get_res = store.client.get('${store.key_prefix}${session.id}')!
 	v = get_res.val()
 	assert v is redict.Nil
@@ -208,7 +208,7 @@ fn test_store_jwt_new_existing() {
 	mut request := setup_request()
 	mut session_one := store.new(request, 'Test-Session')
 	session_one.values = 'Some data'
-	store.save(mut request.header, mut session_one)!
+	store.save(mut request.header, session_one)!
 
 	mut session_two := store.new(request, 'Test-Session')
 	assert session_two.id == session_one.id

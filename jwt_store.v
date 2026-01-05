@@ -60,7 +60,7 @@ pub fn (mut store JsonWebTokenStore) new(request http.Request, name string) Sess
 // The HTTP header key is built with the `prefix` followed by the `Session.name`.
 // Please remember to use HTTP-header friendly strings for both `prefix` and `Session.name`, otherwise
 // `Store.save` will return an error.
-pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, mut session Session) ! {
+pub fn (mut store JsonWebTokenStore) save(mut response_header http.Header, session Session) ! {
 	if session.to_prune {
 		response_header.delete_custom('${store.prefix}${session.name}')
 		return

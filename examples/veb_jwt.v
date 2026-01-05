@@ -52,7 +52,7 @@ fn (mut app App) set_session_middleware(mut ctx Context) bool {
 	ctx.session.values = json.encode(ctx.session_values)
 
 	// save session
-	app.session_store.save(mut ctx.res.header, mut ctx.session) or {
+	app.session_store.save(mut ctx.res.header, ctx.session) or {
 		ctx.text('failed to save session')
 		return false
 	}

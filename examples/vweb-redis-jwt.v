@@ -54,7 +54,7 @@ pub fn (mut app App) admin_auth_post() vweb.Result {
 
 	mut new_session := app.sessions_struct.store.new(app.req, app.sessions_struct.admin_session_name)
 	new_session.values = '${body}'
-	app.sessions_struct.store.save(mut app.header, mut new_session) or { panic(err) }
+	app.sessions_struct.store.save(mut app.header, new_session) or { panic(err) }
 
 	return app.json({
 		'code': '1'

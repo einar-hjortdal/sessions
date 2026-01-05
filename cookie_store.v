@@ -42,7 +42,7 @@ pub fn (mut store CookieStore) new(request http.Request, name string) Session {
 }
 
 // save puts the session in a `Set-Cookie` header in the response `Header`.
-pub fn (mut store CookieStore) save(mut response_header http.Header, mut session Session) ! {
+pub fn (mut store CookieStore) save(mut response_header http.Header, session Session) ! {
 	encoded_session := json.encode(session)
 	cookie := new_cookie(session.name, encoded_session, store.CookieStoreOptions.CookieOptions)!
 	set_cookie(mut response_header, cookie)!
