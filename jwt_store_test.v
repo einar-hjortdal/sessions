@@ -93,7 +93,7 @@ fn test_save_session() {
 	// All defaults
 	if mut store := new_jwt_store(mut opts) {
 		mut session := store.new(request, 'Test-Session')
-		store.save(mut header, mut session) or {
+		store.save(mut header, session) or {
 			assert false // failed to save session
 			return
 		}
@@ -122,7 +122,7 @@ fn test_new_save() {
 	mut session := store.new(request, 'Test-Session')
 	session.values = '453636'
 	id := session.id
-	store.save(mut request.header, mut session) or {
+	store.save(mut request.header, session) or {
 		assert false // failed to save session
 		return
 	}
@@ -146,7 +146,7 @@ fn test_new_save_nfb() {
 	}
 	mut session := store.new(request, 'Test-Session')
 	session.values = 'nbf test'
-	store.save(mut request.header, mut session) or {
+	store.save(mut request.header, session) or {
 		assert false // failed to save session
 		return
 	}
@@ -164,7 +164,7 @@ fn test_new_save_exp() {
 	mut store := new_jwt_store(mut opts)!
 	mut session := store.new(request, 'Test-Session')
 	session.values = 'exp test'
-	store.save(mut request.header, mut session)!
+	store.save(mut request.header, session)!
 	session = store.new(request, 'Test-Session')
 	assert session.values == ''
 }
@@ -182,7 +182,7 @@ fn test_new_save_aud() {
 	}
 	mut session := store.new(request, 'Test-Session')
 	session.values = 'aud test'
-	store.save(mut request.header, mut session) or {
+	store.save(mut request.header, session) or {
 		assert false // failed to save session
 		return
 	}
@@ -203,7 +203,7 @@ fn test_new_save_iat() {
 	}
 	mut session := store.new(request, 'Test-Session')
 	session.values = 'iat test'
-	store.save(mut request.header, mut session) or {
+	store.save(mut request.header, session) or {
 		assert false // failed to save session
 		return
 	}
@@ -224,11 +224,11 @@ fn test_multiple_sessions() {
 	session_one.values = 'test value number one'
 	mut session_two := store.new(request, 'Test-Session-Two')
 	session_two.values = 'test value number two'
-	store.save(mut request.header, mut session_one) or {
+	store.save(mut request.header, session_one) or {
 		assert false // failed to save session
 		return
 	}
-	store.save(mut request.header, mut session_two) or {
+	store.save(mut request.header, session_two) or {
 		assert false // failed to save session
 		return
 	}
