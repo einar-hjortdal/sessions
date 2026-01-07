@@ -19,17 +19,16 @@ mut:
 // if an existing connection is provided it will be used, otherwise a new connection will be started using the given url.
 pub struct FirebirdStoreOptions {
 	CookieOptions
-pub:
-	url string
-pub mut:
-	connection ?&firebird.Connection
 }
 
-fn (o FirebirdStoreOptions) get_connection() !&firebird.Connection {
-	if o.connection != none {
-		return o.connection
+fn (o FirebirdStoreOptions) new_store(mut conn firebird.Connection) !&FirebirdStore {
+	mut store := &FirebirdStore{
+		CookieOptions: o.CookieOptions
+		gen:           luuid.new_generator()
+		conn:          conn
 	}
-	return firebird.new_connection(o.url)!
+	store.table_exists() or { store.table_create()! }
+	return store
 }
 
 fn (mut store FirebirdStore) table_exists() ! {
@@ -60,14 +59,13 @@ fn (mut store FirebirdStore) table_create() ! {
 	tx.commit()!
 }
 
-pub fn new_firebird_store(options FirebirdStoreOptions) !&FirebirdStore {
-	mut store := &FirebirdStore{
-		CookieOptions: options.CookieOptions
-		gen:           luuid.new_generator()
-		conn:          options.get_connection()!
-	}
-	store.table_exists() or { store.table_create()! }
-	return store
+pub fn new_firebird_store(options FirebirdStoreOptions, url string) !&FirebirdStore {
+	mut conn := firebird.new_connection(url)!
+	return options.new_store(mut conn)!
+}
+
+pub fn new_firebird_store_from_connection(options FirebirdStoreOptions, mut conn firebird.Connection) !&FirebirdStore {
+	return options.new_store(mut conn)!
 }
 
 fn (mut store FirebirdStore) new_firebird_session(name string) Session {
@@ -124,22 +122,22 @@ fn (mut store FirebirdStore) merge(session Session) ! {
 
 	mut tx := store.conn.start_transaction(firebird.isolation_level_read_commited)!
 
-	tx.execute('MERGE INTO ${firebird_table} t 
+	tx.execute('MERGE INTO ${firebird_table} t
 		USING (
-			SELECT(
-				CAST(? AS BINARY(16)) AS id,
-				CAST(? AS BLOB SUB_TYPE TEXT) AS encoded
+			SELECT
+				CAST(? AS BINARY(16)),
+				CAST(? AS BLOB SUB_TYPE TEXT),
+				DATEADD(${i32(store.max_age / time.second)} SECOND TO CURRENT_TIMESTAMP)
 				FROM RDB\$DATABASE
-			)
-		) s
+		) s (id, encoded, expires_at)
 		ON t.id = s.id
 		WHEN MATCHED THEN
 			UPDATE SET
 				t.encoded = s.encoded,
-				t.expires_at = DATEADD(${i32(store.max_age / time.second)} SECOND TO CURRENT_TIMESTAMP
+				t.expires_at = s.expires_at
 		WHEN NOT MATCHED THEN
-			INSERT (id, encoded, updated_at) 
-			VALUES (s.id, s.encoded, CURRENT_TIMESTAMP)',
+			INSERT (id, encoded, expires_at)
+			VALUES (s.id, s.encoded, s.expires_at)',
 		session_id_bin, encoded) or {
 		tx.rollback() or {}
 		return err
@@ -159,8 +157,8 @@ pub fn (mut store FirebirdStore) new(request http.Request, name string) Session 
 		return store.new_firebird_session(name)
 	}
 
-	session := store.load(session_id) or { return store.new_firebird_session(name) }
-
+	mut session := store.load(session_id) or { return store.new_firebird_session(name) }
+	session.is_new = false
 	return session
 }
 
