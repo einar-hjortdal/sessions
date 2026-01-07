@@ -127,7 +127,7 @@ mut session := store.new(request, 'demo')
 // Session.values accepts a string: encode your data into a string using, for example, json.
 session.values = json.encode(MySessionData, data) // MySessionData is defined by you, the user.
 
-store.save(mut response_header, mut session)
+store.save(mut response_header, session)
 ```
 
 #### JWT
