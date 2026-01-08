@@ -35,7 +35,7 @@ fn (mut store FirebirdStore) table_exists() ! {
 	mut tx := store.conn.start_transaction(firebird.isolation_level_read_commited)!
 
 	// this query returns an error if the table does not exist
-	tx.execute('SELECT COUNT(*) OVER() FROM ${firebird_table}') or {
+	tx.execute('SELECT COUNT(*) FROM ${firebird_table}') or {
 		tx.rollback() or {}
 		return err
 	}
