@@ -109,7 +109,7 @@ pub fn (mut store RedictStoreCookie) new(request http.Request, name string) Sess
 // delete the cookie.
 pub fn (mut store RedictStoreCookie) save(mut response_header http.Header, session Session) ! {
 	if store.CookieOptions.max_age <= 0 || session.to_prune {
-		store.client.del('${store.key_prefix}${session.id}')!
+		store.client.del('${store.key_prefix}${session.id}').error()!
 		new_cookie_opts := cookie_opts_del(store.CookieOptions)
 		cookie := new_cookie(session.name, '', new_cookie_opts)!
 		set_cookie(mut response_header, cookie)!
@@ -149,29 +149,18 @@ fn (mut store RedictStoreCookie) set(session Session) ! {
 		return error(format_error_message('The value to store is too big'))
 	}
 
-	store.client.set('${store.key_prefix}${session.id}', data, store.max_age)!
+	store.client.set('${store.key_prefix}${session.id}', data, store.max_age).error()!
 }
 
 fn (mut store RedictStoreCookie) load(session_id string) !Session {
-	get_res := store.client.get('${store.key_prefix}${session_id}')!
-	res := get_res.val()
-	match res {
-		redict.Nil {
-			return error(format_error_message('nil'))
-		}
-		string {
-			mut loaded_session := json.decode(Session, res)!
-			if store.refresh_expire {
-				store.client.expire('${store.key_prefix}${session_id}', store.max_age)!
-			}
-
-			loaded_session.is_new = false
-			return loaded_session
-		}
-		else {
-			return error(format_error_message('Unexpected type returned from redict'))
-		}
+	res := store.client.get('${store.key_prefix}${session_id}').result()!
+	mut loaded_session := json.decode(Session, res)!
+	if store.refresh_expire {
+		store.client.expire('${store.key_prefix}${session_id}', store.max_age).error()!
 	}
+
+	loaded_session.is_new = false
+	return loaded_session
 }
 
 /*
@@ -238,7 +227,7 @@ pub fn (mut store RedictStoreJsonWebToken) new(request http.Request, name string
 // this method deletes the session data from Redict.
 pub fn (mut store RedictStoreJsonWebToken) save(mut response_header http.Header, session Session) ! {
 	if session.to_prune {
-		store.client.del('${store.key_prefix}${session.id}')!
+		store.client.del('${store.key_prefix}${session.id}').error()!
 	} else {
 		new_jwt := store.new_token(session.id)
 		response_header.add_custom('${store.prefix}${session.name}', new_jwt)!
@@ -263,8 +252,8 @@ fn (mut store RedictStoreJsonWebToken) load_token(request_header http.Header, na
 fn (store RedictStoreJsonWebToken) decode_token(token string) !JsonWebTokenRedictPayload {
 	if token.contains('.') && token.count('.') == 2 {
 		split_token := token.split('.')
-		signature_mirror := hmac.new(store.secret.bytes(), '${split_token[0]}.${split_token[1]}'.bytes(),
-			sha256.sum, sha256.block_size).bytestr().bytes()
+		signature_mirror := hmac.new(store.secret.bytes(),
+			'${split_token[0]}.${split_token[1]}'.bytes(), sha256.sum, sha256.block_size).bytestr().bytes()
 		decoded_signature := base64.url_decode(split_token[2])
 
 		if hmac.equal(decoded_signature, signature_mirror) {
@@ -301,26 +290,15 @@ fn (mut store RedictStoreJsonWebToken) new_payload(session_id string) JsonWebTok
 }
 
 fn (mut store RedictStoreJsonWebToken) load(session_id string) !Session {
-	get_res := store.client.get('${store.key_prefix}${session_id}')!
-	res := get_res.val()
-	match res {
-		redict.Nil {
-			return error(format_error_message('nil'))
-		}
-		string {
-			mut loaded_session := json.decode(Session, res)!
-			if store.refresh_expire {
-				expire := time.now() - store.JsonWebTokenOptions.get_exp()
-				store.client.expire('${store.key_prefix}${session_id}', expire)!
-			}
-
-			loaded_session.is_new = false
-			return loaded_session
-		}
-		else {
-			return error(format_error_message('Unexpected type returned from redict'))
-		}
+	res := store.client.get('${store.key_prefix}${session_id}').result()!
+	mut loaded_session := json.decode(Session, res)!
+	if store.refresh_expire {
+		expire := time.now() - store.JsonWebTokenOptions.get_exp()
+		store.client.expire('${store.key_prefix}${session_id}', expire).error()!
 	}
+
+	loaded_session.is_new = false
+	return loaded_session
 }
 
 fn (mut store RedictStoreJsonWebToken) set(session Session) ! {
@@ -330,5 +308,6 @@ fn (mut store RedictStoreJsonWebToken) set(session Session) ! {
 	}
 
 	expire := time.now() - store.JsonWebTokenOptions.get_exp()
-	store.client.set('${store.key_prefix}${session.id}', data, expire)!
+	store.client.set('${store.key_prefix}${session.id}', data, expire).error()!
 }
+

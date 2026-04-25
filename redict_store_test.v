@@ -2,7 +2,53 @@ module sessions
 
 import net.http
 import time
+import os
 import einar_hjortdal.redict
+
+const redict_container_name = 'einar_hjortdal-redict-sessions'
+const redict_port = '6381'
+
+fn container_clean() {
+	result := os.execute('docker stop ${redict_container_name}')
+	if result.exit_code != 0 {
+		if result.output.contains('No such container') {
+			return
+		}
+		eprintln(result.output)
+	}
+}
+
+// Remember to `sudo usermod -aG docker $USER`
+fn container_start() ! {
+	container_clean() // kill container if already running
+	result :=
+		os.execute('docker run --rm --detach --name=${redict_container_name} --publish=${redict_port}:6379 registry.redict.io/redict')
+	if result.exit_code != 0 {
+		return error(result.output)
+	}
+}
+
+fn container_is_ready() {
+	mut redict_is_loading := true
+	for redict_is_loading {
+		ping := os.execute('docker exec ${redict_container_name} redict-cli ping')
+		if ping.output.contains('PONG') {
+			redict_is_loading = false
+		}
+
+		time.sleep(1 * time.second)
+	}
+	return
+}
+
+fn testsuite_begin() ! {
+	container_start()!
+	container_is_ready()
+}
+
+fn testsuite_end() ! {
+	container_clean()
+}
 
 fn setup_request() http.Request {
 	return http.new_request(http.Method.get, 'einar-hjortdal.com/sugma', 'none')
@@ -20,7 +66,7 @@ fn setup_default_cookie_store() !&RedictStoreCookie {
 		secret: 'test_secret'
 	}
 	ro := redict.Options{
-		url: ':aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8@localhost:6379'
+		url: '@localhost:${redict_port}/0'
 	}
 	return new_redict_store_cookie(rso, co, ro)!
 }
@@ -32,7 +78,7 @@ fn setup_fifteen_minute_store() !&RedictStoreCookie {
 		max_age: 15 * time.minute
 	}
 	ro := redict.Options{
-		url: ':aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8@localhost:6379'
+		url: '@localhost:${redict_port}/0'
 	}
 	return new_redict_store_cookie(rso, co, ro)!
 }
@@ -84,8 +130,7 @@ fn test_store_cookie_save() {
 	assert set_cookie_headers[0].starts_with('test_session') == true
 	assert set_cookie_headers[0].contains('Max-Age') == false
 	// Verify session data
-	mut get_res := store.client.get('${store.key_prefix}${session.id}')!
-	assert get_res.val() is redict.Nil
+	store.client.get('${store.key_prefix}${session.id}').result() or { assert redict.is_nil(err) }
 	/*
 	*
 	* Fifteen-minute store
@@ -100,20 +145,19 @@ fn test_store_cookie_save() {
 	assert set_cookie_headers.len == 1
 	assert set_cookie_headers[0].starts_with('test_session')
 	assert set_cookie_headers[0].contains('Max-Age')
-	get_res = store.client.get('${store.key_prefix}${session.id}')!
 
-	mut v := get_res.val()
-	assert v is string && v.contains('${session.id}')
-	assert v is string && v.contains('Some data')
+	key := '${store.key_prefix}${session.id}'
+	mut v := store.client.get(key).result()!
+	assert v.contains('${session.id}')
+	assert v.contains('Some data')
 
 	// Test session.to_prune
 	session.to_prune = true
 	store.save(mut request.header, session)!
 	set_cookie_headers = request.header.values(http.CommonHeader.set_cookie)
-	get_res = store.client.get('${store.key_prefix}${session.id}')!
+	store.client.get(key).result() or { assert redict.is_nil(err) }
 	assert set_cookie_headers.len == 2
 	assert !set_cookie_headers[1].contains('expires')
-	assert get_res.val() is redict.Nil
 }
 
 fn test_store_cookie_new_existing() {
@@ -152,7 +196,7 @@ fn setup_default_jwt_store() !&RedictStoreJsonWebToken {
 		secret: 'test_secret'
 	}
 	ro := redict.Options{
-		url: ':aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8@localhost:6379'
+		url: '@localhost:${redict_port}/0'
 	}
 	return new_redict_store_jwt(mut rso, mut jwto, ro)!
 }
@@ -190,17 +234,15 @@ fn test_store_jwt_save() {
 	assert custom_headers[0].count('.') == 2
 
 	// Verify data is put on Redict
-	mut get_res := store.client.get('${store.key_prefix}${session.id}')!
-	mut v := get_res.val()
-	assert v is string && v.contains('Test-Session')
-	assert v is string && v.contains('Some data')
+	key := '${store.key_prefix}${session.id}'
+	mut v := store.client.get(key).result()!
+	assert v.contains('Test-Session')
+	assert v.contains('Some data')
 
 	// Test session.to_prune
 	session.to_prune = true
 	store.save(mut request.header, session)!
-	get_res = store.client.get('${store.key_prefix}${session.id}')!
-	v = get_res.val()
-	assert v is redict.Nil
+	store.client.get(key).result() or { assert redict.is_nil(err) }
 }
 
 fn test_store_jwt_new_existing() {
@@ -216,3 +258,4 @@ fn test_store_jwt_new_existing() {
 	assert session_two.is_new == false
 	// TODO test multiple sessions
 }
+
