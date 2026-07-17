@@ -1,7 +1,7 @@
 module sessions
 
 import net.http
-import json
+import json2
 
 // CookieStoreOptions is the struct to provide to new_cookie_store.
 pub struct CookieStoreOptions {
@@ -37,13 +37,13 @@ pub fn (mut store CookieStore) new(request http.Request, name string) Session {
 	decoded_value := decode_cookie_value(existing_session, store.secret) or {
 		return new_session(name)
 	}
-	session := json.decode(Session, decoded_value) or { return new_session(name) }
+	session := json2.decode[Session](decoded_value) or { return new_session(name) }
 	return session
 }
 
 // save puts the session in a `Set-Cookie` header in the response `Header`.
 pub fn (mut store CookieStore) save(mut response_header http.Header, session Session) ! {
-	encoded_session := json.encode(session)
+	encoded_session := json2.encode(session, escape_unicode: true)
 	cookie := new_cookie(session.name, encoded_session, store.CookieStoreOptions.CookieOptions)!
 	set_cookie(mut response_header, cookie)!
 }

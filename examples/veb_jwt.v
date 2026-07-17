@@ -2,7 +2,8 @@ module main
 
 import einar_hjortdal.sessions
 import os
-import json
+import json2
+import veb
 
 struct SessionValues {
 	id    string
@@ -38,7 +39,7 @@ fn (mut app App) load_session_middleware(mut ctx Context) bool {
 	}
 
 	// users-specific session data
-	ctx.session_values = json.decode(SessionValues, ctx.session.values) or {
+	ctx.session_values = json2.decode[SessionValues](ctx.session.values) or {
 		ctx.res.set_status(http.Status.internal_server_error)
 		ctx.text('Failed to decode SessionValues')
 		return false
@@ -49,7 +50,7 @@ fn (mut app App) load_session_middleware(mut ctx Context) bool {
 
 fn (mut app App) set_session_middleware(mut ctx Context) bool {
 	// encode user-specific session data
-	ctx.session.values = json.encode(ctx.session_values)
+	ctx.session.values = json2.encode(ctx.session_values, escape_unicode: true)
 
 	// save session
 	app.session_store.save(mut ctx.res.header, ctx.session) or {

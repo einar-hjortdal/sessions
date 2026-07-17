@@ -3,7 +3,7 @@ module sessions
 import crypto.hmac
 import crypto.sha256
 import encoding.base64
-import json
+import json2
 import time
 import einar_hjortdal.luuid
 
@@ -48,7 +48,8 @@ fn (o JsonWebTokenOptions) init() !JsonWebTokenOptions {
 	app_name := default_string(o.app_name, author)
 	audience := default_string(o.audience, app_name)
 	issuer := default_string(o.issuer, author)
-	default_only_from := time.parse_rfc3339('2023-07-01T00:00:00.000Z') or { panic(err) } // will never panic
+	default_only_from :=
+		time.parse_rfc3339('2023-07-01T00:00:00.000Z') or { panic(err) } // will never panic
 	only_from := default_time(o.only_from, default_only_from)
 	prefix := default_string(o.app_name, '${author}-')
 
@@ -111,8 +112,9 @@ fn (opts JsonWebTokenOptions) new_payload(sub string, mut gen luuid.Generator) J
 }
 
 fn (opts JsonWebTokenOptions) new_token(sub string, mut gen luuid.Generator) string {
-	header := base64.url_encode(json.encode(new_header()).bytes())
-	payload := base64.url_encode(json.encode(opts.new_payload(sub, mut gen)).bytes())
+	header := base64.url_encode(json2.encode(new_header(), escape_unicode: true).bytes())
+	payload :=
+		base64.url_encode(json2.encode(opts.new_payload(sub, mut gen), escape_unicode: true).bytes())
 
 	signature := hmac.new(opts.secret.bytes(), '${header}.${payload}'.bytes(), sha256.sum,
 		sha256.block_size).bytestr()

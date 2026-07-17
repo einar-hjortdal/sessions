@@ -3,7 +3,7 @@ module sessions
 import crypto.hmac
 import crypto.sha256
 import encoding.base64
-import json
+import json2
 import net.http
 import einar_hjortdal.luuid
 
@@ -96,13 +96,13 @@ fn (mut store JsonWebTokenStore) load_token(request_header http.Header, mut sess
 fn (store JsonWebTokenStore) decode_token(token string) !JsonWebTokenStorePayload {
 	if token.contains('.') && token.count('.') == 2 {
 		split_token := token.split('.')
-		signature_mirror := hmac.new(store.secret.bytes(), '${split_token[0]}.${split_token[1]}'.bytes(),
-			sha256.sum, sha256.block_size).bytestr().bytes()
+		signature_mirror := hmac.new(store.secret.bytes(),
+			'${split_token[0]}.${split_token[1]}'.bytes(), sha256.sum, sha256.block_size).bytestr().bytes()
 		decoded_signature := base64.url_decode(split_token[2])
 
 		if hmac.equal(decoded_signature, signature_mirror) {
 			json_payload := base64.url_decode(split_token[1]).bytestr()
-			payload := json.decode(JsonWebTokenStorePayload, json_payload)!
+			payload := json2.decode[JsonWebTokenStorePayload](json_payload)!
 			claims := JsonWebTokenPayload{
 				iss: payload.iss
 				sub: payload.sub
@@ -123,8 +123,9 @@ fn (store JsonWebTokenStore) decode_token(token string) !JsonWebTokenStorePayloa
 }
 
 fn (mut store JsonWebTokenStore) new_token(session Session) string {
-	header := base64.url_encode(json.encode(new_header()).bytes())
-	payload := base64.url_encode(json.encode(store.new_payload(session)).bytes())
+	header := base64.url_encode(json2.encode(new_header(), escape_unicode: true).bytes())
+	payload :=
+		base64.url_encode(json2.encode(store.new_payload(session), escape_unicode: true).bytes())
 
 	signature := hmac.new(store.secret.bytes(), '${header}.${payload}'.bytes(), sha256.sum,
 		sha256.block_size).bytestr()

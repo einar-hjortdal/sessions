@@ -27,16 +27,14 @@ Please follow these standards
 - No enums.
 - No logical assignment operators.
 - No static methods.
-- No lambdas.
-- No `@[required]` attribute in struct definitions.
-- Use `arrays.concat` instead of `<<`.
+- No lambda expressions.
 
 ### veb
 
-- `object_` files contain request/response data structures and related functions.
-- `route_` files define endpoints, validate request inputs and send responses.
-- `conduit_` files orchestrate database operations operations.
-- `model_` files define individual database operations.
+- `route_` files define endpoints, hygienise request inputs and send responses.
+- `object_` files contain request/response data structures.
+- `internal.conduit` orchestrates database operations, checks request inputs against the database.
+- `internal.conduit.record` defines individual database operations.
 
 ### FirebirdSQL
 

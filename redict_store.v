@@ -3,7 +3,7 @@ module sessions
 import crypto.hmac
 import crypto.sha256
 import encoding.base64
-import json
+import json2
 import net.http
 import time
 import einar_hjortdal.luuid
@@ -144,7 +144,7 @@ fn new_redict_session(name string, id string) Session {
 }
 
 fn (mut store RedictStoreCookie) set(session Session) ! {
-	data := json.encode(session)
+	data := json2.encode(session, escape_unicode: true)
 	if store.max_length != 0 && data.len > store.max_length {
 		return error(format_error_message('The value to store is too big'))
 	}
@@ -154,7 +154,7 @@ fn (mut store RedictStoreCookie) set(session Session) ! {
 
 fn (mut store RedictStoreCookie) load(session_id string) !Session {
 	res := store.client.get('${store.key_prefix}${session_id}').result()!
-	mut loaded_session := json.decode(Session, res)!
+	mut loaded_session := json2.decode[Session](res)!
 	if store.refresh_expire {
 		store.client.expire('${store.key_prefix}${session_id}', store.max_age).error()!
 	}
@@ -258,7 +258,7 @@ fn (store RedictStoreJsonWebToken) decode_token(token string) !JsonWebTokenRedic
 
 		if hmac.equal(decoded_signature, signature_mirror) {
 			json_payload := base64.url_decode(split_token[1]).bytestr()
-			payload := json.decode(JsonWebTokenRedictPayload, json_payload)!
+			payload := json2.decode[JsonWebTokenRedictPayload](json_payload)!
 			store.validate_claims(payload.JsonWebTokenPayload)!
 			return payload
 		} else {
@@ -270,8 +270,9 @@ fn (store RedictStoreJsonWebToken) decode_token(token string) !JsonWebTokenRedic
 }
 
 fn (mut store RedictStoreJsonWebToken) new_token(session_id string) string {
-	header := base64.url_encode(json.encode(new_header()).bytes())
-	payload := base64.url_encode(json.encode(store.new_payload(session_id)).bytes())
+	header := base64.url_encode(json2.encode(new_header(), escape_unicode: true).bytes())
+	payload :=
+		base64.url_encode(json2.encode(store.new_payload(session_id), escape_unicode: true).bytes())
 
 	signature := hmac.new(store.secret.bytes(), '${header}.${payload}'.bytes(), sha256.sum,
 		sha256.block_size).bytestr()
@@ -291,7 +292,7 @@ fn (mut store RedictStoreJsonWebToken) new_payload(session_id string) JsonWebTok
 
 fn (mut store RedictStoreJsonWebToken) load(session_id string) !Session {
 	res := store.client.get('${store.key_prefix}${session_id}').result()!
-	mut loaded_session := json.decode(Session, res)!
+	mut loaded_session := json2.decode[Session](res)!
 	if store.refresh_expire {
 		expire := time.now() - store.JsonWebTokenOptions.get_exp()
 		store.client.expire('${store.key_prefix}${session_id}', expire).error()!
@@ -302,7 +303,7 @@ fn (mut store RedictStoreJsonWebToken) load(session_id string) !Session {
 }
 
 fn (mut store RedictStoreJsonWebToken) set(session Session) ! {
-	data := json.encode(session)
+	data := json2.encode(session, escape_unicode: true)
 	if store.max_length != 0 && data.len > store.max_length {
 		return error(format_error_message('The value to store is too big'))
 	}
@@ -310,4 +311,3 @@ fn (mut store RedictStoreJsonWebToken) set(session Session) ! {
 	expire := time.now() - store.JsonWebTokenOptions.get_exp()
 	store.client.set('${store.key_prefix}${session.id}', data, expire).error()!
 }
-

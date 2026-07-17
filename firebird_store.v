@@ -1,6 +1,6 @@
 module sessions
 
-import json
+import json2
 import net.http
 import time
 import einar_hjortdal.luuid
@@ -93,7 +93,7 @@ fn (mut store FirebirdStore) load(session_id string) !Session {
 
 	v := rows[0].values()
 	encoded, _ := v[0].get_string()!
-	return json.decode(Session, encoded)!
+	return json2.decode[Session](encoded)!
 }
 
 // also deletes all other expired sessions
@@ -118,7 +118,7 @@ fn (mut store FirebirdStore) delete(session_id string) ! {
 // creates or updates a session
 fn (mut store FirebirdStore) merge(session Session) ! {
 	session_id_bin := luuid.to_bytes(session.id)!
-	encoded := json.encode(session)
+	encoded := json2.encode(session, escape_unicode: true)
 
 	mut tx := store.conn.start_transaction(firebird.isolation_level_read_commited)!
 

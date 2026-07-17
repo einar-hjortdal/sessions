@@ -258,4 +258,3 @@ fn test_store_jwt_new_existing() {
 	assert session_two.is_new == false
 	// TODO test multiple sessions
 }
-
