@@ -7,32 +7,31 @@ import einar_hjortdal.luuid
 import einar_hjortdal.firebird
 
 pub const firebird_table = 'einar_hjortdal_sessions'
+const isolation_level = firebird.isolation_level_read_commited
 
 // Stores the session id in a cookie
 pub struct FirebirdStore {
 	CookieOptions
 mut:
-	gen  &luuid.Generator
-	conn &firebird.Connection
+	gen    &luuid.Generator
+	conn   ?&firebird.Connection
+	client ?&firebird.Client
 }
 
-// if an existing connection is provided it will be used, otherwise a new connection will be started using the given url.
-pub struct FirebirdStoreOptions {
-	CookieOptions
-}
-
-fn (o FirebirdStoreOptions) new_store(mut conn firebird.Connection) !&FirebirdStore {
-	mut store := &FirebirdStore{
-		CookieOptions: o.CookieOptions
-		gen:           luuid.new_generator()
-		conn:          conn
+fn (mut s FirebirdStore) start_transaction() !&firebird.Transaction {
+	if conn := s.conn {
+		return conn.start_transaction(isolation_level)!
 	}
-	store.table_exists() or { store.table_create()! }
-	return store
+
+	if mut client := s.client {
+		return client.start_transaction(isolation_level)!
+	}
+
+	return error('No connection/client available')
 }
 
 fn (mut store FirebirdStore) table_exists() ! {
-	mut tx := store.conn.start_transaction(firebird.isolation_level_read_commited)!
+	mut tx := store.start_transaction()!
 
 	// this query returns an error if the table does not exist
 	tx.execute('SELECT COUNT(*) FROM ${firebird_table}') or {
@@ -44,7 +43,7 @@ fn (mut store FirebirdStore) table_exists() ! {
 }
 
 fn (mut store FirebirdStore) table_create() ! {
-	mut tx := store.conn.start_transaction(firebird.isolation_level_read_commited)!
+	mut tx := store.start_transaction()!
 
 	tx.execute('CREATE TABLE ${firebird_table} (
 		id BINARY(16) NOT NULL,
@@ -59,13 +58,48 @@ fn (mut store FirebirdStore) table_create() ! {
 	tx.commit()!
 }
 
+fn (mut store FirebirdStore) init() ! {
+	store.table_exists() or { store.table_create()! }
+}
+
+// if an existing connection/client is provided it will be used, otherwise a new client will be started using the given url.
+pub struct FirebirdStoreOptions {
+	CookieOptions
+}
+
+fn (o FirebirdStoreOptions) new_store_with_connection(mut conn firebird.Connection) !&FirebirdStore {
+	mut store := &FirebirdStore{
+		CookieOptions: o.CookieOptions
+		gen:           luuid.new_generator()
+		conn:          conn
+	}
+	store.init()!
+	return store
+}
+
+fn (o FirebirdStoreOptions) new_store_with_client(mut client firebird.Client) !&FirebirdStore {
+	mut store := &FirebirdStore{
+		CookieOptions: o.CookieOptions
+		gen:           luuid.new_generator()
+		client:        client
+	}
+	store.init()!
+	return store
+}
+
 pub fn new_firebird_store(options FirebirdStoreOptions, url string) !&FirebirdStore {
-	mut conn := firebird.new_connection(url)!
-	return options.new_store(mut conn)!
+	mut client := firebird.new_client(firebird.ClientConfig{
+		url: url
+	})!
+	return options.new_store_with_client(mut client)!
+}
+
+pub fn new_firebird_store_from_client(options FirebirdStoreOptions, mut client firebird.Client) !&FirebirdStore {
+	return options.new_store_with_client(mut client)!
 }
 
 pub fn new_firebird_store_from_connection(options FirebirdStoreOptions, mut conn firebird.Connection) !&FirebirdStore {
-	return options.new_store(mut conn)!
+	return options.new_store_with_connection(mut conn)!
 }
 
 fn (mut store FirebirdStore) new_firebird_session(name string) Session {
@@ -77,7 +111,7 @@ fn (mut store FirebirdStore) new_firebird_session(name string) Session {
 fn (mut store FirebirdStore) load(session_id string) !Session {
 	session_id_bin := luuid.to_bytes(session_id)!
 
-	mut tx := store.conn.start_transaction(firebird.isolation_level_read_commited)!
+	mut tx := store.start_transaction()!
 
 	data := tx.execute('SELECT encoded FROM ${firebird_table} WHERE id = ?', session_id_bin) or {
 		tx.rollback() or {}
@@ -100,7 +134,7 @@ fn (mut store FirebirdStore) load(session_id string) !Session {
 fn (mut store FirebirdStore) delete(session_id string) ! {
 	session_id_bin := luuid.to_bytes(session_id)!
 
-	mut tx := store.conn.start_transaction(firebird.isolation_level_read_commited)!
+	mut tx := store.start_transaction()!
 
 	tx.execute('DELETE FROM ${firebird_table} WHERE id = ?', session_id_bin) or {
 		tx.rollback() or {}
@@ -120,7 +154,7 @@ fn (mut store FirebirdStore) merge(session Session) ! {
 	session_id_bin := luuid.to_bytes(session.id)!
 	encoded := json2.encode(session, escape_unicode: true)
 
-	mut tx := store.conn.start_transaction(firebird.isolation_level_read_commited)!
+	mut tx := store.start_transaction()!
 
 	tx.execute('MERGE INTO ${firebird_table} t
 		USING (

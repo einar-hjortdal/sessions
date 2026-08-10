@@ -53,7 +53,10 @@ fn test_firebird_store() {
 	session.values = 'test_value'
 	store.save(mut request.header, session)!
 
-	mut set_cookie_header := request.header.get(http.CommonHeader.set_cookie)!
+	mut set_cookie_header := request.header.get(http.CommonHeader.set_cookie) or {
+		assert false, 'header missing'
+		return
+	}
 	mut cookie_value := set_cookie_header.trim_string_left('${name}=').split(';')[0]
 	mut cookie := http.Cookie{
 		name:  name
@@ -70,7 +73,10 @@ fn test_firebird_store() {
 	new_value := 'new_test_value'
 	reloaded_session.values = new_value
 	store.save(mut request.header, reloaded_session)!
-	set_cookie_header = request.header.get(http.CommonHeader.set_cookie)!
+	set_cookie_header = request.header.get(http.CommonHeader.set_cookie) or {
+		assert false, 'header missing'
+		return
+	}
 	cookie_value = set_cookie_header.trim_string_left('${name}=').split(';')[0]
 	cookie = http.Cookie{
 		name:  name
