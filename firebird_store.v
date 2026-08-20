@@ -12,6 +12,7 @@ const isolation_level = firebird.isolation_level_read_commited
 // Stores the session id in a cookie
 pub struct FirebirdStore {
 	CookieOptions
+	refresh_expire bool
 mut:
 	gen    &luuid.Generator
 	conn   ?&firebird.Connection
@@ -65,13 +66,16 @@ fn (mut store FirebirdStore) init() ! {
 // if an existing connection/client is provided it will be used, otherwise a new client will be started using the given url.
 pub struct FirebirdStoreOptions {
 	CookieOptions
+pub:
+	refresh_expire bool
 }
 
 fn (o FirebirdStoreOptions) new_store_with_connection(mut conn firebird.Connection) !&FirebirdStore {
 	mut store := &FirebirdStore{
-		CookieOptions: o.CookieOptions
-		gen:           luuid.new_generator()
-		conn:          conn
+		CookieOptions:  o.CookieOptions
+		refresh_expire: o.refresh_expire
+		gen:            luuid.new_generator()
+		conn:           conn
 	}
 	store.init()!
 	return store
@@ -79,9 +83,10 @@ fn (o FirebirdStoreOptions) new_store_with_connection(mut conn firebird.Connecti
 
 fn (o FirebirdStoreOptions) new_store_with_client(mut client firebird.Client) !&FirebirdStore {
 	mut store := &FirebirdStore{
-		CookieOptions: o.CookieOptions
-		gen:           luuid.new_generator()
-		client:        client
+		CookieOptions:  o.CookieOptions
+		refresh_expire: o.refresh_expire
+		gen:            luuid.new_generator()
+		client:         client
 	}
 	store.init()!
 	return store
@@ -113,12 +118,22 @@ fn (mut store FirebirdStore) load(session_id string) !Session {
 
 	mut tx := store.start_transaction()!
 
+	if store.refresh_expire {
+		tx.execute('UPDATE ${firebird_table}
+			SET expires_at = DATEADD(${i32(store.max_age / time.second)} SECOND TO CURRENT_TIMESTAMP
+			WHERE id = ?')!
+	}
+
 	data := tx.execute('SELECT encoded FROM ${firebird_table} WHERE id = ?', session_id_bin) or {
 		tx.rollback() or {}
 		return err
 	}
 
-	tx.rollback() or {}
+	if store.refresh_expire {
+		tx.commit() or {}
+	} else {
+		tx.rollback() or {}
+	}
 
 	rows := data.rows()
 	if rows.len == 0 {
@@ -178,10 +193,6 @@ fn (mut store FirebirdStore) merge(session Session) ! {
 	}
 
 	tx.commit()!
-}
-
-pub fn (mut store FirebirdStore) get(mut request http.Request, name string) Session {
-	return Session{}
 }
 
 pub fn (mut store FirebirdStore) new(request http.Request, name string) Session {

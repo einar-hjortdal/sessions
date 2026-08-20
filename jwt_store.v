@@ -43,10 +43,6 @@ pub fn new_jwt_store(mut opts JsonWebTokenOptions) !&JsonWebTokenStore {
 *
 */
 
-pub fn (mut store JsonWebTokenStore) get(mut request http.Request, name string) Session {
-	return Session{}
-}
-
 pub fn (mut store JsonWebTokenStore) new(request http.Request, name string) Session {
 	mut session := new_session(name)
 	store.load_token(request.header, mut session) or {

@@ -86,10 +86,6 @@ pub fn new_redict_store_cookie_from_redict_client(rso RedictStoreOptions, co Coo
 *
 */
 
-pub fn (mut store RedictStoreCookie) get(mut request http.Request, name string) Session {
-	return Session{}
-}
-
 pub fn (mut store RedictStoreCookie) new(request http.Request, name string) Session {
 	request_cookie := get_cookie_value(request, name) or {
 		return new_redict_session(name, store.luuid_generator.v1())
@@ -207,10 +203,6 @@ struct JsonWebTokenRedictPayload {
 * Store interface
 *
 */
-
-pub fn (mut store RedictStoreJsonWebToken) get(mut request http.Request, name string) Session {
-	return Session{}
-}
 
 pub fn (mut store RedictStoreJsonWebToken) new(request http.Request, name string) Session {
 	payload := store.load_token(request.header, name) or {
