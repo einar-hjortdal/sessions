@@ -2,7 +2,7 @@ Module{
 	name: 'sessions'
 	description: 'session management for V web applications'
 	author: 'einar-hjortdal'
-	version: '3.8.0'
+	version: '3.9.0'
 	repo_url: 'https://github.com/einar-hjortdal/sessions'
 	dependencies: [
 		'einar-hjortdal.firebird',
