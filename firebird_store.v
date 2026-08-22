@@ -120,7 +120,7 @@ fn (mut store FirebirdStore) load(session_id string) !Session {
 
 	if store.refresh_expire {
 		tx.execute('UPDATE ${firebird_table}
-			SET expires_at = DATEADD(${i32(store.max_age / time.second)}) SECOND TO CURRENT_TIMESTAMP
+			SET expires_at = DATEADD(${i32(store.max_age / time.second)} SECOND TO CURRENT_TIMESTAMP)
 			WHERE id = ?',
 			session_id_bin)!
 	}
